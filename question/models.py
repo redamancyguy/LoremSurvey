@@ -2,7 +2,7 @@ from django.db import models
 
 
 class User(models.Model):
-    id = models.BigAutoField(primary_key=True)
+    sid = models.BigIntegerField()
     name = models.CharField(max_length=32)
     school = models.CharField(max_length=32)
     major = models.CharField(max_length=32)
@@ -12,7 +12,7 @@ class User(models.Model):
     email = models.CharField(max_length=64)
     muid = models.BigIntegerField(default=None)
     class Meta:
-        unique_together = ("id", "muid")
+        unique_together = ("sid", "muid")
 
 
 class Page(models.Model):
