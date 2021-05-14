@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<form>
+    <input type="submit" value="submit" onclick="ajaxsend();">
+    <script src="/static/jquery-3.5.1.min.js"></script>
+    <script>
+        function ajaxsend() {
+            $.ajax({
+                url: 'http://0.0.0.0:8000/app_01/receivequestion',
+                type: 'POST',
+                data: {
+                    title: "编程学习调研问卷",
+                    stime: "2021/4/1",
+                    etime: "2021/6/1",
+                    desc: "沈阳航空航天大学 软件工程LoremIpsum Team 调查问卷",
+                    problemSet: [
+                        {
+                            type: 1,
+                            index: 1,
+                            need: true,
+                            title: "您目前的职业是?",
+                            options: [
+                                {label: '在校学生', value: 1},
+                                {label: '政府/机关干部/公务员', value: 2},
+                                {label: '企业管理者（包括基层及中高层管理者）', value: 3},
+                                {
+                                    label: '普通职员（办公室 / 写字楼工作人员）', value: 4
+                                },
+                                {label: '专业人员（如医生 / 律师 / 文体 / 记者 / 老师等）', value: 5},
+                                {label: '普通工人（如工厂工人 / 体力劳动者等）', value: 6},
+                                {
+                                    label: '商业服务业职工（如销售人员 / 商店职员 / 服务员等）', value: 7
+                                },
+                                {label: '个体经营者 / 承包商', value: 8},
+                                {label: '自由职业者', value: 9},
+                                {label: '农林牧渔劳动者', value: 10},
+                                {
+                                    label: '退休',
+                                    value: 11
+                                },
+                                {label: '暂无职业', value: 12}
+                            ],
+                        },
+                        {
+                            type: 1,
+                            index: 2,
+                            need: true,
+                            title: "您学习编程多久了?",
+                            options:
+                                [
+                                    {
+                                        label: '不到3个月',
+                                        value: 1
+                                    },
+                                    {
+                                        label: '3-6个月',
+                                        value: 2
+                                    },
+                                    {
+                                        label: '6-12个月',
+                                        value: 3
+                                    },
+                                    {
+                                        label: '1-3年以上',
+                                        value: 4
+                                    },
+                                    {
+                                        label: '3年以上',
+                                        value: 5
+                                    }
+                                ],
+                        },
+                        {
+                            type: 0,
+                            index: 3,
+                            need: false,
+                            title: "您如何学习编程?",
+                        },
+                        {
+                            type: 0,
+                            index: 4,
+                            need: true,
+                            title: "您学习的方向是?",
+                        },
+                        {
+                            type: 0,
+                            index: 5,
+                            need: true,
+                            title: "您为什么要学习编程?",
+                        },
+                        {
+                            type: 0,
+                            index: 6,
+                            need: false,
+                            title: "您的联系方式?",
+                        },
+                        {
+                            type: 1,
+                            index: 7,
+                            need: false,
+                            title: "您希望订阅我们的信息吗?",
+                            options: [
+                                {label: "是", value: true},
+                                {label: "否", value: false}
+                            ]
+                        },
+                    ]
+                },
+                success: function (data) {
+                    {#    服务端处理完成返回数据时候自动调用#}
+                    {#                        data 是服务端返回的值#}
+                    console.log(data);
+                    if (data === "ok") {
+                        location.href = "#";
+                    } else {
+                        document.getElementById('testing').innerHTML = "error : " + data;
+                    }
+
+                }
+            })
+        }
+    </script>
+</form>
+</body>
+</html>

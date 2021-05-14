@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Index</title>
+</head>
+<body>
+<h1>
+     <a href = "{% url 'index' %}">index</a><br>
+     <a href = "{% url 'question:manage' %}">questionmanage</a><br>
+     <a href = "{% url 'question:adduser' %}">questionadduser</a><br>
+     <a href = "{% url 'question:answer' %}">questionanswer</a><br>
+     <a href = "{% url 'question:generate' %}">questiongenarate</a><br>
+     <a href = "{% url 'user:login' %}">login</a><br>
+     <a href = "{% url 'user:logout' %}">logout</a><br>
+     <a href = "{% url 'user:register' %}">register</a><br>
+</h1>
+</body>
+</html>

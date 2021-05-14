@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<form action="{% url 'user:register' %}" method="post">
+    <input type="text" value="username" name="username">
+    <input type="password" value="password" name="password">
+    <input type="submit">
+</form>
+</body>
+</html>
