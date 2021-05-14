@@ -8,7 +8,7 @@ class User(models.Model):
     major = models.CharField(max_length=32)
     classn = models.CharField(max_length=32)
     sex = models.CharField(max_length=8)
-    phonenum = models.CharField(max_length=32)
+    phone = models.CharField(max_length=32)
     email = models.CharField(max_length=64)
     muid = models.BigIntegerField(default=None)
     class Meta:

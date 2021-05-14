@@ -1,5 +1,7 @@
 import hashlib
 import json
+import os
+
 from django.http import JsonResponse, HttpResponse, QueryDict
 from django.shortcuts import render, redirect
 from django.views import View
@@ -42,7 +44,7 @@ class AddUser(View):
         import user.models as u_models
         muid = u_models.User.objects.filter(token=token).first().id
         for i in  models.User.objects.filter(muid=muid):
-            userlist.append({'name':i.name,'school':i.school,'phonenum':i.phonenum,'email':i.email})
+            userlist.append({'id':i.sid,'name':i.name,'school':i.school,'phone':i.phone,'email':i.email})
         return render(request, 'file.html',{'userlist':userlist})
 
     def post(self, request, *args, **kwargs):
@@ -62,9 +64,10 @@ class AddUser(View):
                     muid = u_models.User.objects.filter(token=token).first().id
                     if muid:
                         for i in data:
-                            models.User.objects.create(id=i[0], name=i[1], school=i[2],
+                            models.User.objects.create(sid=i[0], name=i[1], school=i[2],
                                                        major=i[3], classn=i[4], sex=i[5],
-                                                       phonenum=i[6], email=i[7], muid=muid)
+                                                       phone=i[6], email=i[7], muid=muid)
+                        os.remove('./files/' + i)
                         return JsonResponse({
                             'code': 0,
                             'message': "Received"
@@ -109,7 +112,7 @@ class ManageQuestion(View):
             return JsonResponse({
                 'code': 0,
                 'data': result,
-                'message': 'send success'
+                'message': 'get success'
             })
         except Exception as e:
             return JsonResponse({
