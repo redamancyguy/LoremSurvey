@@ -63,10 +63,10 @@ class AddUser(View):
                     import user.models as u_models
                     muid = u_models.User.objects.filter(token=token).first().id
                     if muid:
-                        for i in data:
-                            models.User.objects.create(sid=i[0], name=i[1], school=i[2],
-                                                       major=i[3], classn=i[4], sex=i[5],
-                                                       phone=i[6], email=i[7], muid=muid)
+                        for ii in data:
+                            models.User.objects.create(sid=ii[0], name=ii[1], school=ii[2],
+                                                       major=ii[3], classn=ii[4], sex=ii[5],
+                                                       phone=ii[6], email=ii[7], muid=muid)
                         os.remove('./files/' + i)
                         return JsonResponse({
                             'code': 0,

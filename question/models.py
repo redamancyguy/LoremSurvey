@@ -57,14 +57,16 @@ class Canswer(models.Model):  # 问卷结果
     id = models.BigAutoField(primary_key=True)
     cqid = models.ForeignKey('Cquestion', on_delete=models.CASCADE)
     choice = models.CharField(max_length=8)  # A B C D
-    uid = models.ForeignKey('User', on_delete=models.CASCADE)
+    uid = models.ForeignKey('User', on_delete=models.CASCADE,default=None)
+    pid = models.ForeignKey('Page', on_delete=models.CASCADE,default=None)
 
 
 class Fanswer(models.Model):
     id = models.BigAutoField(primary_key=True)
     cqid = models.ForeignKey('Fquestion', on_delete=models.CASCADE)
     answer = models.TextField(max_length=1024)
-    uid = models.ForeignKey('User', on_delete=models.CASCADE)
+    uid = models.ForeignKey('User', on_delete=models.CASCADE,default=None)
+    pid = models.ForeignKey('Page', on_delete=models.CASCADE,default=None)
 
 
 class U_P(models.Model):
