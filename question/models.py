@@ -75,6 +75,7 @@ class U_P(models.Model):
     pid = models.ForeignKey('Page', on_delete=models.CASCADE)
     uid = models.ForeignKey('User', on_delete=models.CASCADE)
     sessionid = models.UUIDField(max_length=64, default=None)
+    muid = models.BigIntegerField(default=None)
     class Meta:
         unique_together = ("pid", "uid")
 

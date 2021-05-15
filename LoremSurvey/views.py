@@ -16,7 +16,10 @@ class Index(View):
 
 class NotFound(View):
     def get(self, request, *args, **kwargs):
-        return HttpResponse('<h1>page not found</h1>')
+        return JsonResponse({
+            'code': 0,
+            'message': "Page not found"
+        })
 
     def post(self,request, *args, **kwargs):
         return JsonResponse({

@@ -1,7 +1,6 @@
 import hashlib
 import json
 import os
-
 from django.http import JsonResponse, HttpResponse, QueryDict
 from django.shortcuts import render, redirect
 from django.views import View
@@ -43,9 +42,9 @@ class AddUser(View):
         token = request.COOKIES.get('token')
         import user.models as u_models
         muid = u_models.User.objects.filter(token=token).first().id
-        for i in  models.User.objects.filter(muid=muid):
-            userlist.append({'id':i.sid,'name':i.name,'school':i.school,'phone':i.phone,'email':i.email})
-        return render(request, 'file.html',{'userlist':userlist})
+        for i in models.User.objects.filter(muid=muid):
+            userlist.append({'id': i.sid, 'name': i.name, 'school': i.school, 'phone': i.phone, 'email': i.email})
+        return render(request, 'file.html', {'userlist': userlist})
 
     def post(self, request, *args, **kwargs):
         files = request.FILES
@@ -108,7 +107,8 @@ class ManageQuestion(View):
             print(muid)
             ps = models.Page.objects.filter(muid=muid)
             for i in ps:
-                result.append({'title':i.title,'desc':i.desc,'stime':i.stime,'etime':i.etime,'isopen':i.isopen})
+                result.append(
+                    {'title': i.title, 'desc': i.desc, 'stime': i.stime, 'etime': i.etime, 'isopen': i.isopen})
             return JsonResponse({
                 'code': 0,
                 'data': result,
@@ -130,7 +130,7 @@ class ManageQuestion(View):
             muid = u_models.User.objects.filter(token=token).first().id
             data = json.loads(request.body.decode())
             models.Page.objects.create(title=data['title'], isopen=data['isopen'], desc=data['desc'],
-                                       stime=data['stime'], etime=data['etime'],muid=muid)
+                                       stime=data['stime'], etime=data['etime'], muid=muid)
             pid = models.Page.objects.filter(title=data['title'], desc=data['desc'],
                                              stime=data['stime'], etime=data['etime'])[0]
             for i in data['problemSet']:
@@ -139,12 +139,13 @@ class ManageQuestion(View):
                     cqid = models.Cquestion.objects.filter(title=i['title'], need=i['need'])[0]
                     for j in i['options']:
                         models.Choice.objects.create(option=str(j['value']), text=j['label'], cqid=cqid)
+                    models.Choice.objects.create(option='#', text='others', cqid=cqid)
                 elif i['type'] == 0:
                     models.Fquestion.objects.create(index=i['index'], need=i['need'], title=i['title'], pid=pid)
         except Exception as e:
             return JsonResponse({
                 'code': 0,
-                'message': 'Error'+str(e)
+                'message': 'Error' + str(e)
             })
         return JsonResponse({
             'code': 0,
@@ -156,10 +157,11 @@ class ManageQuestion(View):
         print('kwargs', kwargs)
         import user.models as u_models
         token = request.COOKIES.get('token')
+        print(token)
         muid = u_models.User.objects.filter(token=token).first().id
         print(muid)
-        print('title:',request.DELETE.get('title'))
-        for i in models.Page.objects.filter(title=request.DELETE.get('title'),muid=muid):
+        print('title:', request.DELETE.get('title'))
+        for i in models.Page.objects.filter(title=request.DELETE.get('title'), muid=muid):
             print(i.id)
             i.delete()
             return JsonResponse({
@@ -167,9 +169,9 @@ class ManageQuestion(View):
                 'message': "Delete questions success"
             })
         return JsonResponse({
-        'code': 0,
-        'message': "None questions to delete"
-    })
+            'code': 0,
+            'message': "None questions to delete"
+        })
 
     def put(self, request, *args, **kwargs):
         return JsonResponse({
@@ -179,8 +181,31 @@ class ManageQuestion(View):
 
 
 class Generate(View):
+    def dispatch(self, request, *args, **kwargs):
+        if request.COOKIES.get('token'):
+            from user.models import User
+            if User.objects.filter(token=request.COOKIES.get('token')).first():
+                return super().dispatch(request, *args, **kwargs)
+            return JsonResponse({
+                'code': 1,
+                'message': 'wrong token && please Log in again'
+            })
+        else:
+            return JsonResponse({
+                'code': 1,
+                'message': 'you do not have token,please login'
+            })
+
+    def get(self, request, *args, **kwargs):
+        return JsonResponse({
+            'code': 0,
+            'message': "Generate token here"
+        })
+
     def post(self, request, *args, **kwargs):
         pageid = request.POST.get('id')
+        print(request.META.get('id'))
+        print(pageid)
         # 可以在这里确定一下 是生成那张卷纸，对于那些学生 现在默认为所有   change!
         try:
             for i in models.Page.objects.filter(id=pageid):
@@ -190,22 +215,28 @@ class Generate(View):
                     muid = u_models.User.objects.filter(token=token).first().id
                     for j in models.User.objects.filter(muid=muid):
                         sessionid = hashlib.md5((str(i.id) + str(j.id)).encode('utf-8')).hexdigest()
-                        models.U_P.objects.create(type='1', pid=i, uid=j, sessionid=sessionid)
-                        print(j.id,j.name,j.email,sessionid)
+                        try:
+                            models.U_P.objects.create(type='1', pid=i, uid=j,muid=muid, sessionid=sessionid)
+                        except Exception as e:
+                            print(e)
+                        print(j.id, j.name, j.email, sessionid)
                         from .tests import sendEmail
-                        send_mail('Subject here', 'Here is the message.', '1506607292@qq.com',
-                                  ['duanjihang@live.com'], fail_silently=False)
+                        send_mail('Answer your question here', '1506607292.top?token='+token, '1506607292@qq.com',
+                                  [j.email], fail_silently=False)
                     return JsonResponse({
                         'code': 0,
                         'message': "Generate Closed source success"
                     })
                 elif i.isopen == '0':
                     sessionid = hashlib.md5((str(i.id) + 'open').encode('utf-8')).hexdigest()
-                    uid = models.User.objects.filter(id=123456789).first() # 默认都用这个开放用户答题
+                    uid = models.User.objects.filter(id=123456789).first()  # 默认都用这个开放用户答题
                     models.U_P.objects.create(type='0', uid=uid, pid=i, sessionid=sessionid)
                     from .tests import sendEmail
-                    send_mail('Subject here', 'Here is the message.', '1506607292@qq.com',
-                              ['duanjihang@live.com'], fail_silently=False)
+                    import user.models as u_models
+                    token = request.COOKIES.get('token')
+                    muid = u_models.User.objects.filter(token=token).first().id
+                    send_mail('Answer here', '1506607292.top'+sessionid, '1506607292@qq.com',
+                              [j.id for j in models.User.objects.filter(muid=muid)], fail_silently=False)
                     return JsonResponse({
                         'code': 0,
                         'message': "Generate open source success"
@@ -268,6 +299,6 @@ class AnswerQuestion(View):
 
     def post(self, request, *args, **kwargs):
         return JsonResponse({
-            'code':0,
-            'message':'is ok'
+            'code': 0,
+            'message': 'is ok'
         })

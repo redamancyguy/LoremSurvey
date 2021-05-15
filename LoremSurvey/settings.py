@@ -50,6 +50,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'question.middleware.HttpPost2HttpOtherMiddleware',
 ]
 
 ROOT_URLCONF = 'LoremSurvey.urls'
@@ -192,4 +193,4 @@ EMAIL_PORT = 25  # 发件箱的SMTP服务器端口
 # 上面配置可以不动，下面配置修改为自己的
 
 EMAIL_HOST_USER = '1506607292@qq.com'  # 发送邮件的邮箱地址
-EMAIL_HOST_PASSWORD = 'reuymrffxxxriidd'  # 发送邮件的邮箱密码(这里使用的是授权码)
+EMAIL_HOST_PASSWORD = 'ayfhyuixcncmgbef'  # 发送邮件的邮箱密码(这里使用的是授权码)
