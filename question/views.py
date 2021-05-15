@@ -214,12 +214,13 @@ class Generate(View):
                     for j in models.User.objects.filter(muid=muid):
                         sessionid = hashlib.md5((str(i.id) + str(j.id)).encode('utf-8')).hexdigest()
                         try:
-                            models.U_P.objects.create(type='1', pid=i, uid=j,muid=muid, sessionid=sessionid)
+                            models.U_P.objects.create(type='1', pid=i, uid=j, muid=muid, sessionid=sessionid)
                         except Exception as e:
                             print(e)
                         print(j.id, j.name, j.email, sessionid)
                         from .tests import sendEmail
-                        send_mail('Answer your question here', 'http://1506607292.top/survey/sessionid='+sessionid, '1506607292@qq.com',
+                        send_mail('Answer your question here', 'http://1506607292.top/survey/sessionid=' + sessionid,
+                                  '1506607292@qq.com',
                                   [j.email], fail_silently=False)
                     return JsonResponse({
                         'code': 0,
@@ -227,13 +228,20 @@ class Generate(View):
                     })
                 elif i.isopen == '0':
                     sessionid = hashlib.md5((str(i.id) + 'open').encode('utf-8')).hexdigest()
-                    uid = models.User.objects.filter(id=123456789).first()  # 默认都用这个开放用户答题
+                    try:
+                        import user.models as u_models
+                        token = request.COOKIES.get('token')
+                        muid = u_models.User.objects.filter(token=token).first().id
+                        models.User.objects.create(id=123456789, name='公共', muid=muid)
+                    except Exception as e:
+                        print('error!!!!!!!!!!!!!!!', e)
+                    uid = models.User.objects.filter(sid=123456789).first()  # 默认都用这个开放用户答题
                     models.U_P.objects.create(type='0', uid=uid, pid=i, sessionid=sessionid)
                     from .tests import sendEmail
                     import user.models as u_models
                     token = request.COOKIES.get('token')
                     muid = u_models.User.objects.filter(token=token).first().id
-                    send_mail('Answer here', 'http://1506607292.top/survey/'+sessionid, '1506607292@qq.com',
+                    send_mail('Answer here', 'http://1506607292.top/survey/' + sessionid, '1506607292@qq.com',
                               [j.id for j in models.User.objects.filter(muid=muid)], fail_silently=False)
                     return JsonResponse({
                         'code': 0,
@@ -245,7 +253,7 @@ class Generate(View):
             })
         except Exception as e:
             return JsonResponse({
-                'code': 0,
+                'code': 7,
                 'message': str(e)
             })
 
@@ -253,44 +261,41 @@ class Generate(View):
 class AnswerQuestion(View):
     def get(self, request, *args, **kwargs):
         sessionid = request.GET.get('sessionid')
-        print(sessionid)
         if sessionid:
             try:
                 data = {}
-                for i in models.U_P.objects.filter(sessionid=sessionid):  # 理论上这个循环就一次
-                    for j in models.Page.objects.filter(id=i.pid.id):
-                        print('title', j.title)
-                        data['title'] = j.title
-                        data['isopen'] = j.isopen
-                        data['desc'] = j.desc
-                        data['stime'] = j.stime
-                        data['etime'] = j.etime
-                        data['problemSet'] = []
-                        for k in models.Cquestion.objects.filter(pid=j.id):
-                            options = []
-                            question = {'index': k.index, 'type': 1, 'title': k.title, 'need': k.need,
-                                        'options': options}
-                            for l in models.Choice.objects.filter(cqid=k.id):
-                                options.append({"label": l.text, "value": l.option})
-                            data['problemSet'].append(question)
-                        for k in models.Fquestion.objects.filter(pid=j.id):
-                            question = {'index': k.index, 'type': 0, 'title': k.title, 'need': k.need, }
-                            data['problemSet'].append(question)
-                    return JsonResponse({
-                        'code': 0,
-                        'data': data,
-                        'message': 'send success'
-                    })
+                i = models.U_P.objects.filter(sessionid=sessionid).first()  # 理论上这个循环就一次
+                j = models.Page.objects.filter(id=i.pid.id).first()
+                stime = j.stime
+                etime = j.etime
+                print(stime, "====", etime)
+                data['title'] = j.title
+                data['isopen'] = j.isopen
+                data['desc'] = j.desc
+                data['stime'] = j.stime
+                data['etime'] = j.etime
+                data['problemSet'] = []
+                for k in models.Cquestion.objects.filter(pid=j.id):
+                    options = []
+                    question = {'index': k.index, 'type': 1, 'title': k.title, 'need': k.need,
+                                'options': options}
+                    for l in models.Choice.objects.filter(cqid=k.id):
+                        if l.option != '#':
+                            options.append({"label": l.text, "value": l.option})
+                    data['problemSet'].append(question)
+                for k in models.Fquestion.objects.filter(pid=j.id):
+                    question = {'index': k.index, 'type': 0, 'title': k.title, 'need': k.need, }
+                    data['problemSet'].append(question)
                 return JsonResponse({
-                    'code': 1,
-                    'message': 'Wrong sessionid'
+                    'code': 0,
+                    'data': data,
+                    'message': 'send success'
                 })
             except Exception as e:
                 return JsonResponse({
                     'code': 1,
                     'message': str(e)
                 })
-
         else:
             return JsonResponse({
                 'code': 0,
@@ -298,19 +303,17 @@ class AnswerQuestion(View):
             })
 
     def post(self, request, *args, **kwargs):
+        sessionid = request.GET.get('sessionid')
         data = json.loads(request.body.decode())
-        sessionid = data['sessionid']
         u_q_id = models.U_P.objects.filter(sessionid=sessionid).first()
         pid = u_q_id.pid
         uid = u_q_id.uid
         if pid:
             for i in data['problemSet']:
-                for j in models.Cquestion.objects.filter(index=i['index'],pid=pid):
-                    print(j)
-                    models.Canswer.objects.create(cqid=j,choice=i['option'],uid=uid,pid=pid)
-                for j in models.Fquestion.objects.filter(index=i['index'],pid=pid):
-                    print(j)
-                    models.Fanswer.objects.create(cqid=j,answer=i['answer'],uid=uid,pid=pid)
+                for j in models.Cquestion.objects.filter(index=i['index'], pid=pid):
+                    models.Canswer.objects.create(cqid=j, option=i['option'], uid=uid, pid=pid)
+                for j in models.Fquestion.objects.filter(index=i['index'], pid=pid):
+                    models.Fanswer.objects.create(fqid=j, answer=i['answer'], uid=uid, pid=pid)
             return JsonResponse({
                 'code': 1,
                 'message': 'Submit successfully'
@@ -320,14 +323,56 @@ class AnswerQuestion(View):
             'message': 'Invalid sessionid'
         })
 
-def test(request,*args,**kwargs):
-    print(args)
-    print(kwargs)
-    print('1',request.META.get('QUERY_STRING_ID'))
-    print('2',request.META.get('QUERY_STRING'))
-    # print('3',request.META["HTTP_ID"])
-    print('4',request.META)
-    print('5',request.GET.get('id'))
-    return JsonResponse({
-        'code':'ok'
-    })
+
+class QuestionResult(View):
+    def dispatch(self, request, *args, **kwargs):
+        if request.COOKIES.get('token'):
+            from user.models import User
+            if User.objects.filter(token=request.COOKIES.get('token')).first():
+                return super().dispatch(request, *args, **kwargs)
+            return JsonResponse({
+                'code': 1,
+                'message': 'wrong token && please Log in again'
+            })
+        else:
+            return JsonResponse({
+                'code': 1,
+                'message': 'you do not have token,please login'
+            })
+
+    def get(self, request, *args, **kwargs):
+        import user.models as u_models
+        token = request.COOKIES.get('token')
+        muid = u_models.User.objects.filter(token=token).first().id
+        try:
+            result = []
+            for pid in models.Page.objects.filter(muid=muid):
+                page = {}
+                for cqid in models.Cquestion.objects.filter(pid=pid):
+                    cquestion = {"title": cqid.title}
+                    options = {}
+                    for cid in models.Choice.objects.filter(cqid=cqid):
+                        options[cid.option] = models.Canswer.objects.filter(option=cid.option, cqid=cqid).count()
+                    cquestion['option'] = options
+                    page[cqid.title] = cquestion
+                for fqid in models.Fquestion.objects.filter(pid=pid):
+                    fquestion = {'title': fqid.title}
+                    answer = []
+                    for faid in models.Fanswer.objects.filter(fqid=fqid):
+                        answer.append(faid.answer)
+                    fquestion['answers'] = answer
+                    page[fqid.title] = fquestion
+                result.append(page)
+            return JsonResponse({
+                'code': 7,
+                'message': 'get it',
+                'data':result
+            })
+        except Exception as e:
+            return JsonResponse({
+                'code': 7,
+                'message': str(e)
+            })
+
+    def post(self, request, *args, **kwargs):
+        pass
