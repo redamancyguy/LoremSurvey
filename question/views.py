@@ -203,9 +203,7 @@ class Generate(View):
         })
 
     def post(self, request, *args, **kwargs):
-        pageid = request.POST.get('id')
-        print(request.META.get('id'))
-        print(pageid)
+        pageid = request.GET.get('id')
         # 可以在这里确定一下 是生成那张卷纸，对于那些学生 现在默认为所有   change!
         try:
             for i in models.Page.objects.filter(id=pageid):
@@ -221,7 +219,7 @@ class Generate(View):
                             print(e)
                         print(j.id, j.name, j.email, sessionid)
                         from .tests import sendEmail
-                        send_mail('Answer your question here', '1506607292.top?token='+token, '1506607292@qq.com',
+                        send_mail('Answer your question here', 'http://1506607292.top/survey/sessionid='+sessionid, '1506607292@qq.com',
                                   [j.email], fail_silently=False)
                     return JsonResponse({
                         'code': 0,
@@ -235,7 +233,7 @@ class Generate(View):
                     import user.models as u_models
                     token = request.COOKIES.get('token')
                     muid = u_models.User.objects.filter(token=token).first().id
-                    send_mail('Answer here', '1506607292.top'+sessionid, '1506607292@qq.com',
+                    send_mail('Answer here', 'http://1506607292.top/survey/'+sessionid, '1506607292@qq.com',
                               [j.id for j in models.User.objects.filter(muid=muid)], fail_silently=False)
                     return JsonResponse({
                         'code': 0,
@@ -255,13 +253,15 @@ class Generate(View):
 class AnswerQuestion(View):
     def get(self, request, *args, **kwargs):
         sessionid = request.GET.get('sessionid')
+        print(sessionid)
         if sessionid:
             try:
                 data = {}
                 for i in models.U_P.objects.filter(sessionid=sessionid):  # 理论上这个循环就一次
-                    for j in models.Page.objects.filter(id=i.pid):
+                    for j in models.Page.objects.filter(id=i.pid.id):
                         print('title', j.title)
                         data['title'] = j.title
+                        data['isopen'] = j.isopen
                         data['desc'] = j.desc
                         data['stime'] = j.stime
                         data['etime'] = j.etime
@@ -298,7 +298,36 @@ class AnswerQuestion(View):
             })
 
     def post(self, request, *args, **kwargs):
+        data = json.loads(request.body.decode())
+        sessionid = data['sessionid']
+        u_q_id = models.U_P.objects.filter(sessionid=sessionid).first()
+        pid = u_q_id.pid
+        uid = u_q_id.uid
+        if pid:
+            for i in data['problemSet']:
+                for j in models.Cquestion.objects.filter(index=i['index'],pid=pid):
+                    print(j)
+                    models.Canswer.objects.create(cqid=j,choice=i['option'],uid=uid,pid=pid)
+                for j in models.Fquestion.objects.filter(index=i['index'],pid=pid):
+                    print(j)
+                    models.Fanswer.objects.create(cqid=j,answer=i['answer'],uid=uid,pid=pid)
+            return JsonResponse({
+                'code': 1,
+                'message': 'Submit successfully'
+            })
         return JsonResponse({
-            'code': 0,
-            'message': 'is ok'
+            'code': 1,
+            'message': 'Invalid sessionid'
         })
+
+def test(request,*args,**kwargs):
+    print(args)
+    print(kwargs)
+    print('1',request.META.get('QUERY_STRING_ID'))
+    print('2',request.META.get('QUERY_STRING'))
+    # print('3',request.META["HTTP_ID"])
+    print('4',request.META)
+    print('5',request.GET.get('id'))
+    return JsonResponse({
+        'code':'ok'
+    })
