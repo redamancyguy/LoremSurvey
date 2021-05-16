@@ -283,10 +283,10 @@ class AnswerQuestion(View):
         data = json.loads(request.body.decode())
         u_q_id = models.U_P.objects.filter(sessionid=sessionid).first()
         if not u_q_id:
-            return JsonResponse({
-            'code': 1,
-            'message': 'Invalid sessionid'
-        })
+            return JsonResponse({  # 'Invalid sessionid'
+                'code': 1,
+                'message': 'Invalid sessionid'
+            })
         pid = u_q_id.pid
         uid = u_q_id.uid
         if pid:
@@ -322,7 +322,7 @@ class QuestionResult(ControlView, View):
                     cquestion['option'] = {}
                     for cid in models.Choice.objects.filter(cqid=cqid):
                         cquestion['option'][cid.text] = models.Canswer.objects.filter(option=cid.option,
-                                                                                        cqid=cqid).count()
+                                                                                      cqid=cqid).count()
                         print(cid.option, "===", models.Canswer.objects.filter(option=cid.option, cqid=cqid).count())
                     ii += 1
                     page['question' + str(ii)] = cquestion
