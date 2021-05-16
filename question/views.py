@@ -19,7 +19,10 @@ class Index(View):
         })
 
 
-class AddUser(View):
+class ControlView(object):
+    def __init__(self):
+        self.token = None
+
     def dispatch(self, request, *args, **kwargs):
         if request.COOKIES.get('token'):
             from user.models import User
@@ -30,12 +33,13 @@ class AddUser(View):
                 'message': 'wrong token && please Log in again'
             })
         else:
-            obj = JsonResponse({
+            return JsonResponse({
                 'code': 1,
                 'message': 'you do not have token,please login'
             })
-            # obj.set_cookie('token','eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6InN1bndlbmxpMSJ9.YlXoG6W9va_akPZitVYsN8I26tR_y2LpAcNSG2rFUiI')
-            return obj
+
+
+class AddUser(ControlView, View):
 
     def get(self, request, *args, **kwargs):
         userlist = []
@@ -82,22 +86,7 @@ class AddUser(View):
             })
 
 
-class ManageQuestion(View):
-    def dispatch(self, request, *args, **kwargs):
-        if request.COOKIES.get('token'):
-            from user.models import User
-            if User.objects.filter(token=request.COOKIES.get('token')).first():
-                return super().dispatch(request, *args, **kwargs)
-            return JsonResponse({
-                'code': 1,
-                'message': 'wrong token && please Log in again'
-            })
-        else:
-            return JsonResponse({
-                'code': 1,
-                'message': 'you do not have token,please login'
-            })
-
+class ManageQuestion(ControlView, View):
     def get(self, request, *args, **kwargs):
         try:
             result = []
@@ -180,22 +169,7 @@ class ManageQuestion(View):
         })
 
 
-class Generate(View):
-    def dispatch(self, request, *args, **kwargs):
-        if request.COOKIES.get('token'):
-            from user.models import User
-            if User.objects.filter(token=request.COOKIES.get('token')).first():
-                return super().dispatch(request, *args, **kwargs)
-            return JsonResponse({
-                'code': 1,
-                'message': 'wrong token && please Log in again'
-            })
-        else:
-            return JsonResponse({
-                'code': 1,
-                'message': 'you do not have token,please login'
-            })
-
+class Generate(ControlView, View):
     def get(self, request, *args, **kwargs):
         return JsonResponse({
             'code': 0,
@@ -207,14 +181,14 @@ class Generate(View):
         # 可以在这里确定一下 是生成那张卷纸，对于那些学生 现在默认为所有   change!
         try:
             for i in models.Page.objects.filter(id=pageid):
-                if i.isopen == '1':
+                if i.isopen == '0':
                     import user.models as u_models
                     token = request.COOKIES.get('token')
                     muid = u_models.User.objects.filter(token=token).first().id
                     for j in models.User.objects.filter(muid=muid):
                         sessionid = hashlib.md5((str(i.id) + str(j.id)).encode('utf-8')).hexdigest()
                         try:
-                            models.U_P.objects.create(type='1', pid=i, uid=j, muid=muid, sessionid=sessionid)
+                            models.U_P.objects.create(type='0', pid=i, uid=j, sessionid=sessionid)
                         except Exception as e:
                             print(e)
                         print(j.id, j.name, j.email, sessionid)
@@ -226,23 +200,25 @@ class Generate(View):
                         'code': 0,
                         'message': "Generate Closed source success"
                     })
-                elif i.isopen == '0':
-                    sessionid = hashlib.md5((str(i.id) + 'open').encode('utf-8')).hexdigest()
+                elif i.isopen == '1':
                     try:
                         import user.models as u_models
                         token = request.COOKIES.get('token')
                         muid = u_models.User.objects.filter(token=token).first().id
-                        models.User.objects.create(id=123456789, name='公共', muid=muid)
+                        print(muid)
+                        models.User.objects.create(sid=123456789, name='公共', muid=muid)
                     except Exception as e:
                         print('error!!!!!!!!!!!!!!!', e)
                     uid = models.User.objects.filter(sid=123456789).first()  # 默认都用这个开放用户答题
-                    models.U_P.objects.create(type='0', uid=uid, pid=i, sessionid=sessionid)
+                    sessionid = hashlib.md5((str(i.id) + '123456789').encode('utf-8')).hexdigest()
+                    models.U_P.objects.create(type='1', uid=uid, pid=i, sessionid=sessionid)
                     from .tests import sendEmail
                     import user.models as u_models
                     token = request.COOKIES.get('token')
-                    muid = u_models.User.objects.filter(token=token).first().id
+                    muid = u_models.User.objects.filter(token=token).first()
                     send_mail('Answer here', 'http://1506607292.top/survey/' + sessionid, '1506607292@qq.com',
-                              [j.id for j in models.User.objects.filter(muid=muid)], fail_silently=False)
+                              [j.email for j in models.User.objects.filter(muid=muid.id)] + [muid.email],
+                              fail_silently=False)
                     return JsonResponse({
                         'code': 0,
                         'message': "Generate open source success"
@@ -306,6 +282,11 @@ class AnswerQuestion(View):
         sessionid = request.GET.get('sessionid')
         data = json.loads(request.body.decode())
         u_q_id = models.U_P.objects.filter(sessionid=sessionid).first()
+        if not u_q_id:
+            return JsonResponse({
+            'code': 1,
+            'message': 'Invalid sessionid'
+        })
         pid = u_q_id.pid
         uid = u_q_id.uid
         if pid:
@@ -314,6 +295,7 @@ class AnswerQuestion(View):
                     models.Canswer.objects.create(cqid=j, option=i['option'], uid=uid, pid=pid)
                 for j in models.Fquestion.objects.filter(index=i['index'], pid=pid):
                     models.Fanswer.objects.create(fqid=j, answer=i['answer'], uid=uid, pid=pid)
+            models.U_P.objects.filter(sessionid=sessionid).delete()
             return JsonResponse({
                 'code': 1,
                 'message': 'Submit successfully'
@@ -324,22 +306,7 @@ class AnswerQuestion(View):
         })
 
 
-class QuestionResult(View):
-    def dispatch(self, request, *args, **kwargs):
-        if request.COOKIES.get('token'):
-            from user.models import User
-            if User.objects.filter(token=request.COOKIES.get('token')).first():
-                return super().dispatch(request, *args, **kwargs)
-            return JsonResponse({
-                'code': 1,
-                'message': 'wrong token && please Log in again'
-            })
-        else:
-            return JsonResponse({
-                'code': 1,
-                'message': 'you do not have token,please login'
-            })
-
+class QuestionResult(ControlView, View):
     def get(self, request, *args, **kwargs):
         import user.models as u_models
         token = request.COOKIES.get('token')
@@ -347,26 +314,32 @@ class QuestionResult(View):
         try:
             result = []
             for pid in models.Page.objects.filter(muid=muid):
+                global ii
+                ii = 0
                 page = {}
                 for cqid in models.Cquestion.objects.filter(pid=pid):
                     cquestion = {"title": cqid.title}
-                    options = {}
+                    cquestion['option'] = {}
                     for cid in models.Choice.objects.filter(cqid=cqid):
-                        options[cid.option] = models.Canswer.objects.filter(option=cid.option, cqid=cqid).count()
-                    cquestion['option'] = options
-                    page[cqid.title] = cquestion
+                        cquestion['option'][cid.text] = models.Canswer.objects.filter(option=cid.option,
+                                                                                        cqid=cqid).count()
+                        print(cid.option, "===", models.Canswer.objects.filter(option=cid.option, cqid=cqid).count())
+                    ii += 1
+                    page['question' + str(ii)] = cquestion
                 for fqid in models.Fquestion.objects.filter(pid=pid):
                     fquestion = {'title': fqid.title}
                     answer = []
                     for faid in models.Fanswer.objects.filter(fqid=fqid):
                         answer.append(faid.answer)
                     fquestion['answers'] = answer
-                    page[fqid.title] = fquestion
+                    ii += 1
+                    page['question' + str(ii)] = fquestion
                 result.append(page)
+                ii = 0
             return JsonResponse({
                 'code': 7,
                 'message': 'get it',
-                'data':result
+                'data': result
             })
         except Exception as e:
             return JsonResponse({
@@ -375,4 +348,7 @@ class QuestionResult(View):
             })
 
     def post(self, request, *args, **kwargs):
-        pass
+        return JsonResponse({
+            'code': 0,
+            'message': 'You can get result here'
+        })
