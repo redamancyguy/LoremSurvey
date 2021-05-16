@@ -4,8 +4,12 @@ import os
 from django.http import JsonResponse, HttpResponse, QueryDict
 from django.shortcuts import render, redirect
 from django.views import View
+from rest_framework import viewsets
+
 from . import models
 from django.core.mail import send_mail
+
+from .serializers import UserSerializer
 
 
 class Index(View):
@@ -20,13 +24,10 @@ class Index(View):
 
 
 class ControlView(object):
-    def __init__(self):
-        self.token = None
-
     def dispatch(self, request, *args, **kwargs):
         if request.COOKIES.get('token'):
-            from user.models import User
-            if User.objects.filter(token=request.COOKIES.get('token')).first():
+            from user import models as u_model
+            if u_model.User.objects.filter(token=request.COOKIES.get('token')).first():
                 return super().dispatch(request, *args, **kwargs)
             return JsonResponse({
                 'code': 1,
@@ -39,14 +40,53 @@ class ControlView(object):
             })
 
 
-class AddUser(ControlView, View):
+
+class UserViewSet(viewsets.ModelViewSet):
+    """
+        retrieve:
+            返回用户实例
+        list:
+            返回所有用户，按最近加入的用户排序
+        create:
+            创建新用户
+        delete:
+            删除现有用户
+        partial_update:
+            更新现有用户上的一个或多个字段
+        update:
+            更新用户
+    """
+    '''查看，编辑用户的界面'''
+    # queryset = User.objects.all().order_by('id')
+    serializer_class = UserSerializer
+    print(serializer_class, type(serializer_class))
+
+
+
+class Respondents(ControlView, View):
+    """
+        retrieve:
+            返回用户实例
+        list:
+            返回所有用户，按最近加入的用户排序
+        create:
+            创建新用户
+        delete:
+            删除现有用户
+        partial_update:
+            更新现有用户上的一个或多个字段
+        update:
+            更新用户
+    """
+    '''查看，编辑用户的界面'''
+
 
     def get(self, request, *args, **kwargs):
         userlist = []
         token = request.COOKIES.get('token')
         import user.models as u_models
         muid = u_models.User.objects.filter(token=token).first().id
-        for i in models.User.objects.filter(muid=muid):
+        for i in models.Respondent.objects.filter(muid=muid):
             userlist.append({'id': i.sid, 'name': i.name, 'school': i.school, 'phone': i.phone, 'email': i.email})
         return render(request, 'file.html', {'userlist': userlist})
 
@@ -67,7 +107,7 @@ class AddUser(ControlView, View):
                     muid = u_models.User.objects.filter(token=token).first().id
                     if muid:
                         for ii in data:
-                            models.User.objects.create(sid=ii[0], name=ii[1], school=ii[2],
+                            models.Respondent.objects.create(sid=ii[0], name=ii[1], school=ii[2],
                                                        major=ii[3], classn=ii[4], sex=ii[5],
                                                        phone=ii[6], email=ii[7], muid=muid)
                         os.remove('./files/' + i)
@@ -185,7 +225,7 @@ class Generate(ControlView, View):
                     import user.models as u_models
                     token = request.COOKIES.get('token')
                     muid = u_models.User.objects.filter(token=token).first().id
-                    for j in models.User.objects.filter(muid=muid):
+                    for j in models.Respondent.objects.filter(muid=muid):
                         sessionid = hashlib.md5((str(i.id) + str(j.id)).encode('utf-8')).hexdigest()
                         try:
                             models.U_P.objects.create(type='0', pid=i, uid=j, sessionid=sessionid)
@@ -206,10 +246,10 @@ class Generate(ControlView, View):
                         token = request.COOKIES.get('token')
                         muid = u_models.User.objects.filter(token=token).first().id
                         print(muid)
-                        models.User.objects.create(sid=123456789, name='公共', muid=muid)
+                        models.Respondent.objects.create(sid=123456789, name='公共', muid=muid)
                     except Exception as e:
                         print('error!!!!!!!!!!!!!!!', e)
-                    uid = models.User.objects.filter(sid=123456789).first()  # 默认都用这个开放用户答题
+                    uid = models.Respondent.objects.filter(sid=123456789).first()  # 默认都用这个开放用户答题
                     sessionid = hashlib.md5((str(i.id) + '123456789').encode('utf-8')).hexdigest()
                     models.U_P.objects.create(type='1', uid=uid, pid=i, sessionid=sessionid)
                     from .tests import sendEmail
@@ -217,7 +257,7 @@ class Generate(ControlView, View):
                     token = request.COOKIES.get('token')
                     muid = u_models.User.objects.filter(token=token).first()
                     send_mail('Answer here', 'http://1506607292.top/survey/' + sessionid, '1506607292@qq.com',
-                              [j.email for j in models.User.objects.filter(muid=muid.id)] + [muid.email],
+                              [j.email for j in models.Respondent.objects.filter(muid=muid.id)] + [muid.email],
                               fail_silently=False)
                     return JsonResponse({
                         'code': 0,
@@ -234,6 +274,39 @@ class Generate(ControlView, View):
             })
 
 
+def timeCompare(ormTime):
+    from datetime import datetime
+    if ormTime.year > datetime.now().year:
+        return True
+    elif ormTime.year == datetime.now().year:
+        if ormTime.month > datetime.now().month:
+            return True
+        elif ormTime.month == datetime.now().month:
+            if ormTime.day > datetime.now().day:
+                return True
+            elif ormTime.day == datetime.now().day:
+                if ormTime.hour > datetime.now().hour:
+                    return True
+                elif ormTime.hour == datetime.now().hour:
+                    if ormTime.minute > datetime.now().minute:
+                        return True
+                    elif ormTime.minute == datetime.now().minute:
+                        if ormTime.second > datetime.now().second:
+                            return True
+                        else:
+                            return False
+                    else:
+                        return False
+                else:
+                    return False
+            else:
+                return False
+        else:
+            return False
+    else:
+        return False
+
+
 class AnswerQuestion(View):
     def get(self, request, *args, **kwargs):
         sessionid = request.GET.get('sessionid')
@@ -241,16 +314,31 @@ class AnswerQuestion(View):
             try:
                 data = {}
                 i = models.U_P.objects.filter(sessionid=sessionid).first()  # 理论上这个循环就一次
+                if not i:
+                    return JsonResponse({
+                        'code': 1,
+                        'message': "Invalid sessionid"
+                    })
                 j = models.Page.objects.filter(id=i.pid.id).first()
                 stime = j.stime
                 etime = j.etime
-                print(stime, "====", etime)
+                print(stime.year, "====", etime)
                 data['title'] = j.title
                 data['isopen'] = j.isopen
                 data['desc'] = j.desc
                 data['stime'] = j.stime
                 data['etime'] = j.etime
                 data['problemSet'] = []
+                if not timeCompare(j.etime):
+                    return JsonResponse({
+                        'code': 1,
+                        'message': 'The questionnaire time is over'
+                    })
+                if timeCompare(j.stime):
+                    return JsonResponse({
+                        'code': 1,
+                        'message': 'The questionnaire has not started yet'
+                    })
                 for k in models.Cquestion.objects.filter(pid=j.id):
                     options = []
                     question = {'index': k.index, 'type': 1, 'title': k.title, 'need': k.need,

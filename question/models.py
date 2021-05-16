@@ -2,7 +2,7 @@ from django.db import models
 from django.utils import timezone
 
 
-class User(models.Model):
+class Respondent(models.Model):
     sid = models.BigIntegerField()
     name = models.CharField(max_length=32)
     school = models.CharField(max_length=32)
@@ -62,7 +62,7 @@ class Canswer(models.Model):  # 问卷结果
     id = models.BigAutoField(primary_key=True)
     cqid = models.ForeignKey('Cquestion', on_delete=models.CASCADE)
     option = models.CharField(max_length=8)  # A B C D
-    uid = models.ForeignKey('User', on_delete=models.CASCADE, default=None)
+    uid = models.ForeignKey('Respondent', on_delete=models.CASCADE, default=None)
     pid = models.ForeignKey('Page', on_delete=models.CASCADE, default=None)
 
 
@@ -70,7 +70,7 @@ class Fanswer(models.Model):
     id = models.BigAutoField(primary_key=True)
     fqid = models.ForeignKey('Fquestion', on_delete=models.CASCADE)
     answer = models.TextField(max_length=1024)
-    uid = models.ForeignKey('User', on_delete=models.CASCADE, default=None)
+    uid = models.ForeignKey('Respondent', on_delete=models.CASCADE, default=None)
     pid = models.ForeignKey('Page', on_delete=models.CASCADE, default=None)
 
 
@@ -78,7 +78,7 @@ class U_P(models.Model):
     id = models.BigAutoField(primary_key=True)
     type = models.CharField(max_length=4)
     pid = models.ForeignKey('Page', on_delete=models.CASCADE)
-    uid = models.ForeignKey('User', on_delete=models.CASCADE)
+    uid = models.ForeignKey('Respondent', on_delete=models.CASCADE)
     sessionid = models.UUIDField(max_length=64, default=None)
 
     class Meta:
