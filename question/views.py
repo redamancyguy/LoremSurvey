@@ -4,12 +4,9 @@ import os
 from django.http import JsonResponse, HttpResponse, QueryDict
 from django.shortcuts import render, redirect
 from django.views import View
-from rest_framework import viewsets
-
 from . import models
 from django.core.mail import send_mail
 
-from .serializers import UserSerializer
 
 
 class Index(View):
@@ -40,47 +37,7 @@ class ControlView(object):
             })
 
 
-
-class UserViewSet(viewsets.ModelViewSet):
-    """
-        retrieve:
-            返回用户实例
-        list:
-            返回所有用户，按最近加入的用户排序
-        create:
-            创建新用户
-        delete:
-            删除现有用户
-        partial_update:
-            更新现有用户上的一个或多个字段
-        update:
-            更新用户
-    """
-    '''查看，编辑用户的界面'''
-    # queryset = User.objects.all().order_by('id')
-    serializer_class = UserSerializer
-    print(serializer_class, type(serializer_class))
-
-
-
 class Respondents(ControlView, View):
-    """
-        retrieve:
-            返回用户实例
-        list:
-            返回所有用户，按最近加入的用户排序
-        create:
-            创建新用户
-        delete:
-            删除现有用户
-        partial_update:
-            更新现有用户上的一个或多个字段
-        update:
-            更新用户
-    """
-    '''查看，编辑用户的界面'''
-
-
     def get(self, request, *args, **kwargs):
         userlist = []
         token = request.COOKIES.get('token')
@@ -108,8 +65,8 @@ class Respondents(ControlView, View):
                     if muid:
                         for ii in data:
                             models.Respondent.objects.create(sid=ii[0], name=ii[1], school=ii[2],
-                                                       major=ii[3], classn=ii[4], sex=ii[5],
-                                                       phone=ii[6], email=ii[7], muid=muid)
+                                                             major=ii[3], classn=ii[4], sex=ii[5],
+                                                             phone=ii[6], email=ii[7], muid=muid)
                         os.remove('./files/' + i)
                         return JsonResponse({
                             'code': 0,
