@@ -8,7 +8,6 @@ from . import models
 from django.core.mail import send_mail
 
 
-
 class Index(View):
     def get(self, request, *args, **kwargs):
         return render(request, 'template.html', {'info': 'index'})
@@ -73,14 +72,36 @@ class Respondents(ControlView, View):
                             'message': "Received"
                         })
             return JsonResponse({
-                'code': 7,
+                'code': 1,
                 'message': "File transfer but did not receive"
             })
         else:
             return JsonResponse({
-                'code': 7,
+                'code': 1,
                 'message': "No file transfer"
             })
+
+    def delete(self, request, *args, **kwargs):
+        try:
+            print(request.body)
+            for i in json.loads(request.body):
+                models.Respondent.objects.filter(sid=i).delete()
+            return JsonResponse({
+                'code': 0,
+                'message': "delete successfully"
+            })
+        except Exception as e:
+            return JsonResponse({
+                'code': 7,
+                'message': str(e),
+            })
+    def put(self, request, *args, **kwargs):
+        print(request.PUT)
+        print(request.PUT.body)
+        return JsonResponse({
+            'code': 1,
+            'message': "None questions to delete"
+        })
 
 
 class ManageQuestion(ControlView, View):
@@ -102,9 +123,8 @@ class ManageQuestion(ControlView, View):
             })
         except Exception as e:
             return JsonResponse({
-                'code': 0,
-                'data': str(e),
-                'message': 'error'
+                'code': 7,
+                'message': str(e)
             })
 
     def post(self, request, *args, **kwargs):
@@ -130,8 +150,8 @@ class ManageQuestion(ControlView, View):
                     models.Fquestion.objects.create(index=i['index'], need=i['need'], title=i['title'], pid=pid)
         except Exception as e:
             return JsonResponse({
-                'code': 0,
-                'message': 'Error' + str(e)
+                'code': 7,
+                'message':  str(e)
             })
         return JsonResponse({
             'code': 0,
@@ -146,8 +166,9 @@ class ManageQuestion(ControlView, View):
         print(token)
         muid = u_models.User.objects.filter(token=token).first().id
         print(muid)
-        print('title:', request.DELETE.get('title'))
-        for i in models.Page.objects.filter(title=request.DELETE.get('title'), muid=muid):
+        data = json.loads(request.body)
+        print('id:', data['id'])
+        for i in models.Page.objects.filter(id=data['id'], muid=muid):
             print(i.id)
             i.delete()
             return JsonResponse({
@@ -155,7 +176,7 @@ class ManageQuestion(ControlView, View):
                 'message': "Delete questions success"
             })
         return JsonResponse({
-            'code': 0,
+            'code': 1,
             'message': "None questions to delete"
         })
 
@@ -174,7 +195,7 @@ class Generate(ControlView, View):
         })
 
     def post(self, request, *args, **kwargs):
-        pageid = request.GET.get('id')
+        pageid = json.loads(request.body)['id']
         # 可以在这里确定一下 是生成那张卷纸，对于那些学生 现在默认为所有   change!
         try:
             for i in models.Page.objects.filter(id=pageid):
@@ -205,7 +226,10 @@ class Generate(ControlView, View):
                         print(muid)
                         models.Respondent.objects.create(sid=123456789, name='公共', muid=muid)
                     except Exception as e:
-                        print('error!!!!!!!!!!!!!!!', e)
+                        return JsonResponse({
+                            'code': 0,
+                            'message': str(e)
+                        })
                     uid = models.Respondent.objects.filter(sid=123456789).first()  # 默认都用这个开放用户答题
                     sessionid = hashlib.md5((str(i.id) + '123456789').encode('utf-8')).hexdigest()
                     models.U_P.objects.create(type='1', uid=uid, pid=i, sessionid=sessionid)
@@ -314,7 +338,7 @@ class AnswerQuestion(View):
                 })
             except Exception as e:
                 return JsonResponse({
-                    'code': 1,
+                    'code': 7,
                     'message': str(e)
                 })
         else:

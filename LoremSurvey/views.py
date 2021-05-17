@@ -5,9 +5,9 @@ from django.views import View
 
 class Index(View):
     def get(self, request, *args, **kwargs):
-        return render(request,'index.html')
+        return render(request, 'index.html')
 
-    def post(self,request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         return JsonResponse({
             'code': 0,
             'message': "unknown"
@@ -21,11 +21,12 @@ class NotFound(View):
             'message': "Page not found"
         })
 
-    def post(self,request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         return JsonResponse({
             'code': 0,
             'message': "unknown"
         })
 
 
-
+def test(request):
+    return render(request, '../static/spa/index.html')

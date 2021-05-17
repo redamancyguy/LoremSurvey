@@ -1,3 +1,4 @@
+import json
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import View
@@ -18,25 +19,26 @@ class Index(View):
 class Login(View):
 
     def get(self, request, *args, **kwargs):
-        return render(request,'login.html')
+        return render(request, 'login.html')
 
     def post(self, request, *args, **kwargs):
-        if request.POST.get('username') and request.POST.get('password'):
-            info = models.User.objects.filter(username=request.POST.get('username'),
-                                              password=request.POST.get('password')).first()
+        data = json.loads(request.body)
+        if data['username'] and data['password']:
+            info = models.User.objects.filter(username=data['username'],
+                                              password=data['password']).first()
             if info:
                 import jwt
                 key = 'LoremSurvey'
                 payload = {'username': info.username}
                 token = jwt.encode(payload, key, algorithm='HS256')
                 # data2 = jwt.decode(token, key, algorithms='HS256')
-                print(token)
                 info.token = token
                 info.save()
                 obj = JsonResponse({
                     'code': 0,
                     'message': 'login successfully'
                 })
+                # obj.set_cookie('token', token, max_age=3600,httponly=True,secure=True,samesite='None')
                 obj.set_cookie('token', token, max_age=3600)
                 return obj
             else:
@@ -53,22 +55,26 @@ class Login(View):
 class Register(View):
 
     def get(self, request, *args, **kwargs):
-        return render(request,'register.html')
+        return JsonResponse({
+            'code':0,
+            'message':'register here'
+        })
 
     def post(self, request, *args, **kwargs):
-        if request.POST.get('username') and request.POST.get('password'):
+        data = json.loads(request.body)
+        if data['username'] and data['password']:
             try:
-                models.User.objects.create(username=request.POST.get('username'),
-                                           password=request.POST.get('password'), token='',
-                                           phone=request.POST.get('phone'),
-                                           email=request.POST.get('email'))
+                models.User.objects.create(username=data['username'],
+                                           password=data['password'], token='',
+                                           phone=data['phone'],
+                                           email=data['email'])
                 return JsonResponse({
                     'code': 0,
                     'massage': 'Register successfully'
                 })
             except Exception as e:
                 return JsonResponse({
-                    'code': 1,
+                    'code': 7,
                     'massage': str(e)
                 })
         else:
@@ -81,7 +87,10 @@ class Register(View):
 class Logout(View):
 
     def get(self, request, *args, **kwargs):
-        return render(request,'logout.html')
+        return JsonResponse({
+            'code': 0,
+            'message': 'there is nothing to get'
+        })
 
     def post(self, request, *args, **kwargs):
         if request.COOKIES.get('token'):
@@ -92,7 +101,6 @@ class Logout(View):
                     'code': 0,
                     'message': 'logout successfully'
                 })
-                # obj.set_cookie('token', '', max_age=3600)
                 obj.set_cookie('token', '')
                 return obj
             else:

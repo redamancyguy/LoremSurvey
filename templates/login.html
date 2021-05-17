@@ -3,12 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <style>
+        .hide {
+            display: none;
+        }
+
+        .shadow {
+            position: fixed;
+            left: 35%;
+            right: 60%;
+            top: 40%;
+            bottom: 40%;
+            margin: auto;
+            background-color: #0a0a0a;
+            opacity: 0.5;
+            z-index: 999;
+        }
+
+        .smallWindow {
+            z-index: 1000;
+            position: fixed;
+            left: 35%;
+            right: 60%;
+            top: 40%;
+            height: 300px;
+            width: 400px;
+            opacity: 1;
+            background-color: #00ccff;
+        }
+    </style>
+    <script src="/static/jquery-3.5.1.min.js"></script>
+    <script>
+        function removeHideforLogin() {
+            document.getElementById('shadowModelforLogin').classList.remove('hide');
+            document.getElementById('loginWindow').classList.remove('hide');
+        }
+
+        function removeHideforRegister() {
+            document.getElementById('registerWindow').classList.remove('hide');
+            document.getElementById('shadowModelforRegister').classList.remove('hide');
+        }
+
+        function addHideforLogin() {
+            document.getElementById('loginWindow').classList.add('hide');
+            document.getElementById('shadowModelforLogin').classList.add('hide');
+        }
+
+        function addHideforRegister() {
+            document.getElementById('registerWindow').classList.add('hide');
+            document.getElementById('shadowModelforRegister').classList.add('hide');
+        }
+    </script>
 </head>
 <body>
-<form action="{% url 'user:login' %}" method="post">
-    <input type="text" value="sunwenli" name="username">
-    <input type="password" value="123456789" name="password">
-    <input type="submit">
-</form>
+
+
+<div>
+    <input type="button" value="login" onclick="removeHideforLogin()">
+</div>
+<div id="shadowModelforLogin" class="shadow hide">
+    <div id="loginWindow" class="smallWindow hide">
+        <h3>Edting</h3>
+        <form action="{% url 'user:login' %}" method="post">
+            <p>
+                <a>username:</a>
+                <label>
+                    <input type="text" name='username'>
+                </label>
+            </p>
+            <p>
+                <a>password:</a>
+                <label>
+                    <input type="text" name='password'>
+                </label>
+            </p>
+            <input type="submit" value="login">
+            <input type="button" value="cancel" onclick="addHideforLogin()">
+        </form>
+    </div>
+</div>
+<div>
+    <input type="button" value="register" onclick="removeHideforRegister()">
+</div>
+<div id="shadowModelforRegister" class="shadow hide">
+    <div id="registerWindow" class="smallWindow hide">
+        <h3>Edting</h3>
+        <form action="{% url 'user:register' %}" method="post">
+            <p>
+                <a>username:</a>
+                <label>
+                    <input type="text" name='username'>
+                </label>
+            </p>
+            <p>
+                <a>password:</a>
+                <label>
+                    <input type="text" name='password'>
+                </label>
+            </p>
+            <p>
+                <a>phone:</a>
+                <label>
+                    <input type="text" name='phone'>
+                </label>
+            </p>
+            <p>
+                <a>email:</a>
+                <label>
+                    <input type="text" name='email'>
+                </label>
+            </p>
+        </form>
+        <input type="submit" value="register">
+        <input type="submit" value="candle" onclick="addHideforRegister()">
+    </div>
+</div>
+<div>
+    <form action="{% url 'user:logout' %}" method="post">
+        <input type="submit" value="logout">
+    </form>
+</div>
+<a href="/static/spa/index.html"> test </a>
 </body>
 </html>

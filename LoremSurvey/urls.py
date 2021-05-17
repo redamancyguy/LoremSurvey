@@ -24,6 +24,7 @@ urlpatterns = [
     path(r'admin/', admin.site.urls),
     path(r'user/', include('user.urls', namespace="user"), name='user'),
     path(r'question/', include('question.urls', namespace='question'), name='question'),
+    path(r'test',views.test ,name='test'),
 
     re_path(r'(.+)/', views.NotFound.as_view(), name='notfound'),
 ]
