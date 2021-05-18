@@ -95,6 +95,7 @@ class Respondents(ControlView, View):
                 'code': 7,
                 'message': str(e),
             })
+
     def put(self, request, *args, **kwargs):
         print(request.PUT)
         print(request.PUT.body)
@@ -111,7 +112,6 @@ class ManageQuestion(ControlView, View):
             token = request.COOKIES.get('token')
             import user.models as u_models
             muid = u_models.User.objects.filter(token=token).first().id
-            print(muid)
             ps = models.Page.objects.filter(muid=muid)
             for i in ps:
                 result.append(
@@ -128,8 +128,6 @@ class ManageQuestion(ControlView, View):
             })
 
     def post(self, request, *args, **kwargs):
-        print('args', args)
-        print('kwargs', kwargs)
         try:
             token = request.COOKIES.get('token')
             import user.models as u_models
@@ -151,7 +149,7 @@ class ManageQuestion(ControlView, View):
         except Exception as e:
             return JsonResponse({
                 'code': 7,
-                'message':  str(e)
+                'message': str(e)
             })
         return JsonResponse({
             'code': 0,
@@ -159,17 +157,11 @@ class ManageQuestion(ControlView, View):
         })
 
     def delete(self, request, *args, **kwargs):
-        print('args', args)
-        print('kwargs', kwargs)
         import user.models as u_models
         token = request.COOKIES.get('token')
-        print(token)
         muid = u_models.User.objects.filter(token=token).first().id
-        print(muid)
         data = json.loads(request.body)
-        print('id:', data['id'])
         for i in models.Page.objects.filter(id=data['id'], muid=muid):
-            print(i.id)
             i.delete()
             return JsonResponse({
                 'code': 0,
@@ -181,9 +173,18 @@ class ManageQuestion(ControlView, View):
         })
 
     def put(self, request, *args, **kwargs):
+        data = json.loads(request.body)
+        token = request.COOKIES.get('token')
+        import user.models as u_models
+        muid = u_models.User.objects.filter(token=token).first().id
+        title = data['title']
+        pid = models.Page.objects.filter(title=title,muid=muid).first()
+        if pid:
+            print(pid.title,pid.di)
+            print('change this')
         return JsonResponse({
-            'code': 1,
-            'message': 'Someone has already answered the question, so you can not change the answer'
+            'code': 0,
+            'message': 'tests'
         })
 
 
@@ -233,7 +234,6 @@ class Generate(ControlView, View):
                     uid = models.Respondent.objects.filter(sid=123456789).first()  # 默认都用这个开放用户答题
                     sessionid = hashlib.md5((str(i.id) + '123456789').encode('utf-8')).hexdigest()
                     models.U_P.objects.create(type='1', uid=uid, pid=i, sessionid=sessionid)
-                    from .tests import sendEmail
                     import user.models as u_models
                     token = request.COOKIES.get('token')
                     muid = u_models.User.objects.filter(token=token).first()

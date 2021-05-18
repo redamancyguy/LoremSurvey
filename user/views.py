@@ -1,4 +1,6 @@
 import json
+
+from django.core.mail import send_mail
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import View
@@ -40,6 +42,7 @@ class Login(View):
                 })
                 # obj.set_cookie('token', token, max_age=3600,httponly=True,secure=True,samesite='None')
                 obj.set_cookie('token', token, max_age=3600)
+                obj.set_cookie('username', info.username, max_age=3600)
                 return obj
             else:
                 return JsonResponse({
@@ -52,12 +55,64 @@ class Login(View):
         })
 
 
+class ChangePassword(View):
+
+    def post(self, request, *args, **kwargs):
+        data = json.loads(request.body)
+        username = data['username']
+        if not username:
+            return JsonResponse({
+                'code': 1,
+                'message': 'I do not know your username'
+            })
+        uid = models.User.objects.filter(username=username).first()
+        if not uid:
+            return JsonResponse({
+                'code': 1,
+                'message': 'there is none user whose username is ' + username
+            })
+        import random
+        uid.emailcode = str(random.randint(0, 1000000))
+        uid.save()
+        print(uid.emailcode)
+        send_mail('Answer here', 'this is the code for change you password' + uid.emailcode, '1506607292@qq.com',
+                  [uid.email], fail_silently=False)
+        return JsonResponse({
+            'code': 0,
+            'message': 'the code have been send to you email'
+        })
+
+    def put(self, request, *args, **kwargs):
+        data = json.loads(request.body)
+        emailcode = data['emailcode']
+        if not emailcode:
+            return JsonResponse({
+                'code': 1,
+                'message': 'do not receive emailcode'
+            })
+        print(emailcode)
+        uid = models.User.objects.filter(emailcode=emailcode).first()
+        if not uid:
+            return JsonResponse({
+                'code': 1,
+                'message': 'wrong code'
+            })
+        password = data['password']
+        uid.password = password
+        uid.emailcode = ''
+        uid.save()
+        return JsonResponse({
+            'code': 0,
+            'message': 'change successfully'
+        })
+
+
 class Register(View):
 
     def get(self, request, *args, **kwargs):
         return JsonResponse({
-            'code':0,
-            'message':'register here'
+            'code': 0,
+            'message': 'register here'
         })
 
     def post(self, request, *args, **kwargs):

@@ -9,3 +9,4 @@ class User(models.Model):
     token = models.TextField(max_length=1024, default=None)
     phone = models.CharField(max_length=15, default=None)
     email = models.CharField(max_length=20, default=None)
+    emailcode = models.CharField(default=None,max_length=32)
