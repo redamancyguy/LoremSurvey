@@ -29,4 +29,5 @@ class NotFound(View):
 
 
 def test(request):
-    return render(request, '../static/spa/index.html')
+    print(request.body)
+    return HttpResponse('TESTING!!!')
