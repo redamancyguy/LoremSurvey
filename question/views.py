@@ -133,10 +133,8 @@ class ManageQuestion(ControlView, View):
             import user.models as u_models
             muid = u_models.User.objects.filter(token=token).first().id
             data = json.loads(request.body.decode())
-            models.Page.objects.create(title=data['title'], isopen=data['isopen'], desc=data['desc'],
-                                       stime=data['stime'], etime=data['etime'], muid=muid)
-            pid = models.Page.objects.filter(title=data['title'], desc=data['desc'],
-                                             stime=data['stime'], etime=data['etime'])[0]
+            pid = models.Page.objects.create(title=data['title'], isopen=data['isopen'], desc=data['desc'],
+                                             stime=data['stime'], etime=data['etime'], muid=muid)
             for i in data['problemSet']:
                 if i['type'] == 1:
                     models.Cquestion.objects.create(index=i['index'], title=i['title'], need=i['need'], pid=pid)
@@ -178,13 +176,41 @@ class ManageQuestion(ControlView, View):
         import user.models as u_models
         muid = u_models.User.objects.filter(token=token).first().id
         title = data['title']
-        pid = models.Page.objects.filter(title=title,muid=muid).first()
+        pid = models.Page.objects.filter(title=title, muid=muid).first()
         if pid:
-            print(pid.title,pid.di)
-            print('change this')
+            pid_id = pid.id
+            pid.delete()
+            print('delete')
+            try:
+                token = request.COOKIES.get('token')
+                import user.models as u_models
+                muid = u_models.User.objects.filter(token=token).first().id
+                data = json.loads(request.body.decode())
+                models.Page.objects.create(id=pid_id, title=data['title'], isopen=data['isopen'], desc=data['desc'],
+                                           stime=data['stime'], etime=data['etime'], muid=muid)
+                pid = models.Page.objects.filter(title=data['title'], desc=data['desc'],
+                                                 stime=data['stime'], etime=data['etime'])[0]
+                for i in data['problemSet']:
+                    if i['type'] == 1:
+                        models.Cquestion.objects.create(index=i['index'], title=i['title'], need=i['need'], pid=pid)
+                        cqid = models.Cquestion.objects.filter(title=i['title'], need=i['need'])[0]
+                        for j in i['options']:
+                            models.Choice.objects.create(option=str(j['value']), text=j['label'], cqid=cqid)
+                        models.Choice.objects.create(option='#', text='others', cqid=cqid)
+                    elif i['type'] == 0:
+                        models.Fquestion.objects.create(index=i['index'], need=i['need'], title=i['title'], pid=pid)
+            except Exception as e:
+                return JsonResponse({
+                    'code': 7,
+                    'message': str(e)
+                })
+            return JsonResponse({
+                'code': 0,
+                'message': "Receive questions success"
+            })
         return JsonResponse({
             'code': 0,
-            'message': 'tests'
+            'message': 'there is not page which is ' + str(data['title'])
         })
 
 

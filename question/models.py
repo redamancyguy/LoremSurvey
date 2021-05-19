@@ -26,9 +26,6 @@ class Page(models.Model):
     isopen = models.CharField(max_length=8, default=None)
     muid = models.BigIntegerField(default=None)
 
-    class Meta:
-        unique_together = ("muid", "title")
-
 
 class Cquestion(models.Model):
     id = models.BigAutoField(primary_key=True)

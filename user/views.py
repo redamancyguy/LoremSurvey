@@ -90,7 +90,6 @@ class ChangePassword(View):
                 'code': 1,
                 'message': 'do not receive emailcode'
             })
-        print(emailcode)
         uid = models.User.objects.filter(emailcode=emailcode).first()
         if not uid:
             return JsonResponse({
