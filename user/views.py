@@ -40,6 +40,9 @@ class Login(View):
                     'code': 0,
                     'message': 'login successfully'
                 })
+                obj['Access-Control-Allow-Origin'] = '*'
+                obj['Access-Control-Allow-Headers'] = "content-type"
+                obj['Access-Control-Allow-Methods'] = "DELETE,PUT,GET,POST"
                 # obj.set_cookie('token', token, max_age=3600,httponly=True,secure=True,samesite='None')
                 obj.set_cookie('token', token, max_age=3600)
                 obj.set_cookie('username', info.username, max_age=3600)
@@ -47,11 +50,11 @@ class Login(View):
             else:
                 return JsonResponse({
                     'code': 1,
-                    'massage': 'wrong username or password'
+                    'message': 'wrong username or password'
                 })
         return JsonResponse({
             'code': 1,
-            'massage': 'Nothing input !'
+            'message': 'Nothing input !'
         })
 
 
@@ -121,7 +124,7 @@ class Register(View):
                 models.User.objects.create(username=data['username'],
                                            password=data['password'], token='',
                                            phone=data['phone'],
-                                           email=data['email'])
+                                           email=data['email'],emailcode='')
                 return JsonResponse({
                     'code': 0,
                     'massage': 'Register successfully'
@@ -155,7 +158,7 @@ class Logout(View):
                     'code': 0,
                     'message': 'logout successfully'
                 })
-                obj.set_cookie('token', '')
+                obj.delete_cookie('token')
                 return obj
             else:
                 return JsonResponse({

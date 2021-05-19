@@ -8,6 +8,39 @@ from . import models
 from django.core.mail import send_mail
 
 
+def timeCompare(ormTime):
+    from datetime import datetime
+    if ormTime.year > datetime.now().year:
+        return True
+    elif ormTime.year == datetime.now().year:
+        if ormTime.month > datetime.now().month:
+            return True
+        elif ormTime.month == datetime.now().month:
+            if ormTime.day > datetime.now().day:
+                return True
+            elif ormTime.day == datetime.now().day:
+                if ormTime.hour > datetime.now().hour:
+                    return True
+                elif ormTime.hour == datetime.now().hour:
+                    if ormTime.minute > datetime.now().minute:
+                        return True
+                    elif ormTime.minute == datetime.now().minute:
+                        if ormTime.second > datetime.now().second:
+                            return True
+                        else:
+                            return False
+                    else:
+                        return False
+                else:
+                    return False
+            else:
+                return False
+        else:
+            return False
+    else:
+        return False
+
+
 class Index(View):
     def get(self, request, *args, **kwargs):
         return render(request, 'template.html', {'info': 'index'})
@@ -43,34 +76,48 @@ class Respondents(ControlView, View):
         import user.models as u_models
         muid = u_models.User.objects.filter(token=token).first().id
         for i in models.Respondent.objects.filter(muid=muid):
-            userlist.append({'id': i.sid, 'name': i.name, 'school': i.school, 'phone': i.phone, 'email': i.email})
-        return render(request, 'file.html', {'userlist': userlist})
+            userlist.append(
+                {'id': i.sid, 'name': i.name, 'school': i.school, 'phone': i.phone, 'email': i.email, 'sex': i.sex})
+        return JsonResponse({
+            'code': 0,
+            'data': userlist,
+            'message': 'user list'
+        })
 
     def post(self, request, *args, **kwargs):
         files = request.FILES
         if files:
-            for i in files:
-                file = request.FILES[i]
-                if file:
-                    f = open('./files/' + i, 'wb')
-                    for chunk in file.chunks():
-                        f.write(chunk)
-                    f.close()
-                    import pandas as pd
-                    data = pd.read_excel('./files/' + i).values
-                    token = request.COOKIES.get('token')
-                    import user.models as u_models
-                    muid = u_models.User.objects.filter(token=token).first().id
-                    if muid:
-                        for ii in data:
-                            models.Respondent.objects.create(sid=ii[0], name=ii[1], school=ii[2],
-                                                             major=ii[3], classn=ii[4], sex=ii[5],
-                                                             phone=ii[6], email=ii[7], muid=muid)
-                        os.remove('./files/' + i)
-                        return JsonResponse({
-                            'code': 0,
-                            'message': "Received"
-                        })
+            try:
+                for i in files:
+                    file = request.FILES[i]
+                    if file:
+                        f = open('./files/' + i, 'wb')
+                        for chunk in file.chunks():
+                            f.write(chunk)
+                        f.close()
+                        import pandas as pd
+                        data = pd.read_excel('./files/' + i).values
+                        token = request.COOKIES.get('token')
+                        import user.models as u_models
+                        muid = u_models.User.objects.filter(token=token).first().id
+                        if muid:
+                            for ii in data:
+                                item = models.Respondent.objects.filter(sid=ii[0])
+                                if item:
+                                    item.delete()
+                                models.Respondent.objects.create(sid=ii[0], name=ii[1], school=ii[2],
+                                                                 major=ii[3], classn=ii[4], sex=ii[5],
+                                                                 phone=ii[6], email=ii[7], muid=muid)
+                            os.remove('./files/' + i)
+                            return JsonResponse({
+                                'code': 0,
+                                'message': "Received"
+                            })
+            except Exception as e:
+                return JsonResponse({
+                    'code': 7,
+                    'message': str(e)
+                })
             return JsonResponse({
                 'code': 1,
                 'message': "File transfer but did not receive"
@@ -107,25 +154,105 @@ class Respondents(ControlView, View):
 
 class ManageQuestion(ControlView, View):
     def get(self, request, *args, **kwargs):
-        try:
-            result = []
-            token = request.COOKIES.get('token')
-            import user.models as u_models
-            muid = u_models.User.objects.filter(token=token).first().id
-            ps = models.Page.objects.filter(muid=muid)
-            for i in ps:
-                result.append(
-                    {'title': i.title, 'desc': i.desc, 'stime': i.stime, 'etime': i.etime, 'isopen': i.isopen})
-            return JsonResponse({
-                'code': 0,
-                'data': result,
-                'message': 'get success'
-            })
-        except Exception as e:
-            return JsonResponse({
-                'code': 7,
-                'message': str(e)
-            })
+        if request.body == b'':
+            try:
+                result = []
+                token = request.COOKIES.get('token')
+                import user.models as u_models
+                muid = u_models.User.objects.filter(token=token).first().id
+                ps = models.Page.objects.filter(muid=muid)
+                for i in ps:
+                    status = None
+                    if i.stime == None:
+                        result.append(
+                            {'id': i.id, 'title': i.title, 'desc': i.desc, 'stime': i.stime, 'etime': i.etime,
+                             'isopen': i.isopen, 'status': status})
+                        continue
+                    if timeCompare(i.stime):
+                        status = '-1'
+                    elif not timeCompare(i.etime):
+                        status = '1'
+                    else:
+                        status = '0'
+                    result.append(
+                        {'id': i.id, 'title': i.title, 'desc': i.desc, 'stime': i.stime, 'etime': i.etime,
+                         'isopen': i.isopen, 'status': status})
+                return JsonResponse({
+                    'code': 0,
+                    'data': result,
+                    'message': 'get success'
+                })
+            except Exception as e:
+                return JsonResponse({
+                    'code': 7,
+                    'message': str(e)
+                })
+        else:
+            data = json.loads(request.body)
+        if 'id' in data.keys():
+            rdata = {}
+            try:
+                j = models.Page.objects.filter(id=data['id']).first()
+                if j is None:
+                    return JsonResponse({
+                        'code': 0,
+                        'message': 'None question page id is :' + data['id']
+                    })
+                rdata['title'] = j.title
+                rdata['isopen'] = j.isopen
+                rdata['desc'] = j.desc
+                rdata['stime'] = j.stime
+                rdata['etime'] = j.etime
+                rdata['problemSet'] = []
+                for k in models.Cquestion.objects.filter(pid=j.id):
+                    options = []
+                    question = {'index': k.index, 'type': 1, 'title': k.title, 'need': k.need,
+                                'options': options}
+                    for l in models.Choice.objects.filter(cqid=k.id):
+                        if l.option != '#':
+                            options.append({"label": l.text, "value": l.option})
+                    rdata['problemSet'].append(question)
+                for k in models.Fquestion.objects.filter(pid=j.id):
+                    question = {'index': k.index, 'type': 0, 'title': k.title, 'need': k.need, }
+                    rdata['problemSet'].append(question)
+                return JsonResponse({
+                    'code': 0,
+                    'data': rdata,
+                    'message': 'send success'
+                })
+            except Exception as e:
+                return JsonResponse({
+                    'code': 0,
+                    'data': str(e),
+                })
+        else:
+            try:
+                result = []
+                token = request.COOKIES.get('token')
+                import user.models as u_models
+                muid = u_models.User.objects.filter(token=token).first().id
+                ps = models.Page.objects.filter(muid=muid)
+                for i in ps:
+                    status = None
+                    if timeCompare(i.stime):
+                        status = '-1'
+                    elif not timeCompare(i.etime):
+                        status = '1'
+                    else:
+                        status = '0'
+                    result.append(
+                        {'id': i.id, 'title': i.title, 'desc': i.desc, 'stime': i.stime, 'etime': i.etime,
+                         'isopen': i.isopen, 'status': status})
+                return JsonResponse({
+                    'code': 0,
+                    'data': result,
+                    'message': 'get success'
+                })
+            except Exception as e:
+                return JsonResponse({
+                    'code': 7,
+                    'message': str(e)
+                })
 
     def post(self, request, *args, **kwargs):
         try:
@@ -151,7 +278,8 @@ class ManageQuestion(ControlView, View):
             })
         return JsonResponse({
             'code': 0,
-            'message': "Receive questions success"
+            'message': "Receive questions success",
+            'data': {'id': pid.id}
         })
 
     def delete(self, request, *args, **kwargs):
@@ -175,8 +303,8 @@ class ManageQuestion(ControlView, View):
         token = request.COOKIES.get('token')
         import user.models as u_models
         muid = u_models.User.objects.filter(token=token).first().id
-        title = data['title']
-        pid = models.Page.objects.filter(title=title, muid=muid).first()
+        id = data['id']
+        pid = models.Page.objects.filter(id=id, muid=muid).first()
         if pid:
             pid_id = pid.id
             pid.delete()
@@ -216,13 +344,36 @@ class ManageQuestion(ControlView, View):
 
 class Generate(ControlView, View):
     def get(self, request, *args, **kwargs):
-        return JsonResponse({
-            'code': 0,
-            'message': "Generate token here"
-        })
+        try:
+            pid = request.GET.get('id')
+            userlist = []
+            token = request.COOKIES.get('token')
+            import user.models as u_models
+            muid = u_models.User.objects.filter(token=token).first().id
+            for i in models.Respondent.objects.filter(muid=muid):
+                status = 0
+                if models.U_P.objects.filter(pid_id=pid, uid=i).first():
+                    status = 1
+                userlist.append(
+                    {'id': i.sid, 'name': i.name, 'school': i.school, 'phone': i.phone, 'email': i.email, 'sex': i.sex,
+                     'status': status})
+            return JsonResponse({
+                'code': 0,
+                'data': userlist,
+                'message': 'respondentsList'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'code': 0,
+                'message': str(e)
+            })
 
     def post(self, request, *args, **kwargs):
-        pageid = json.loads(request.body)['id']
+
+        global sessionid
+        data = json.loads(request.body)
+        pageid = data['id']
+        userList = data['userlist']
         # 可以在这里确定一下 是生成那张卷纸，对于那些学生 现在默认为所有   change!
         try:
             for i in models.Page.objects.filter(id=pageid):
@@ -231,44 +382,46 @@ class Generate(ControlView, View):
                     token = request.COOKIES.get('token')
                     muid = u_models.User.objects.filter(token=token).first().id
                     for j in models.Respondent.objects.filter(muid=muid):
+                        if j.sid not in userList:
+                            continue
                         sessionid = hashlib.md5((str(i.id) + str(j.id)).encode('utf-8')).hexdigest()
                         try:
                             models.U_P.objects.create(type='0', pid=i, uid=j, sessionid=sessionid)
+                            print(j.id, j.name, j.email, sessionid)
+                            from .tests import sendEmail
+                            send_mail('Answer your question here',
+                                      'http://1506607292.top/survey/sessionid=' + sessionid,
+                                      '1506607292@qq.com',
+                                      [j.email], fail_silently=False)
                         except Exception as e:
                             print(e)
-                        print(j.id, j.name, j.email, sessionid)
-                        from .tests import sendEmail
-                        send_mail('Answer your question here', 'http://1506607292.top/survey/sessionid=' + sessionid,
-                                  '1506607292@qq.com',
-                                  [j.email], fail_silently=False)
                     return JsonResponse({
                         'code': 0,
-                        'message': "Generate Closed source success"
+                        'message': "Generate Closed source success",
                     })
                 elif i.isopen == '1':
                     try:
                         import user.models as u_models
                         token = request.COOKIES.get('token')
                         muid = u_models.User.objects.filter(token=token).first().id
-                        print(muid)
-                        models.Respondent.objects.create(sid=123456789, name='公共', muid=muid)
+                        models.Respondent.objects.create(sid=123456789, name='anonymous', muid=muid, school='',
+                                                         major='',
+                                                         classn='', phone='', email='', sex='')
                     except Exception as e:
-                        return JsonResponse({
-                            'code': 0,
-                            'message': str(e)
-                        })
+                        print(e)
                     uid = models.Respondent.objects.filter(sid=123456789).first()  # 默认都用这个开放用户答题
                     sessionid = hashlib.md5((str(i.id) + '123456789').encode('utf-8')).hexdigest()
                     models.U_P.objects.create(type='1', uid=uid, pid=i, sessionid=sessionid)
                     import user.models as u_models
                     token = request.COOKIES.get('token')
                     muid = u_models.User.objects.filter(token=token).first()
-                    send_mail('Answer here', 'http://1506607292.top/survey/' + sessionid, '1506607292@qq.com',
+                    send_mail('Answer here', 'http://1506607292.top/survey/sessionid' + sessionid, '1506607292@qq.com',
                               [j.email for j in models.Respondent.objects.filter(muid=muid.id)] + [muid.email],
                               fail_silently=False)
                     return JsonResponse({
                         'code': 0,
-                        'message': "Generate open source success"
+                        'message': "Generate open source success",
+                        'data': {'link': 'http://1506607292.top/survey/sessionid=' + sessionid}
                     })
             return JsonResponse({
                 'code': 1,
@@ -279,39 +432,6 @@ class Generate(ControlView, View):
                 'code': 7,
                 'message': str(e)
             })
-
-
-def timeCompare(ormTime):
-    from datetime import datetime
-    if ormTime.year > datetime.now().year:
-        return True
-    elif ormTime.year == datetime.now().year:
-        if ormTime.month > datetime.now().month:
-            return True
-        elif ormTime.month == datetime.now().month:
-            if ormTime.day > datetime.now().day:
-                return True
-            elif ormTime.day == datetime.now().day:
-                if ormTime.hour > datetime.now().hour:
-                    return True
-                elif ormTime.hour == datetime.now().hour:
-                    if ormTime.minute > datetime.now().minute:
-                        return True
-                    elif ormTime.minute == datetime.now().minute:
-                        if ormTime.second > datetime.now().second:
-                            return True
-                        else:
-                            return False
-                    else:
-                        return False
-                else:
-                    return False
-            else:
-                return False
-        else:
-            return False
-    else:
-        return False
 
 
 class AnswerQuestion(View):
@@ -327,9 +447,6 @@ class AnswerQuestion(View):
                         'message': "Invalid sessionid"
                     })
                 j = models.Page.objects.filter(id=i.pid.id).first()
-                stime = j.stime
-                etime = j.etime
-                print(stime.year, "====", etime)
                 data['title'] = j.title
                 data['isopen'] = j.isopen
                 data['desc'] = j.desc

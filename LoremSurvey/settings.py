@@ -39,6 +39,9 @@ INSTALLED_APPS = [
     'question.apps.QuestionConfig',
     'user.apps.UserConfig',
     'corsheaders',
+    'rest_framework',
+    # 'django_filters',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -133,7 +136,7 @@ STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'),)
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
+CORS_ORIGIN_ALLOW_ALL = True
 CORS_ORIGIN_WHITELIST = (
     'http://0.0.0.0:*',
     'http://*',
@@ -143,7 +146,10 @@ CORS_ORIGIN_WHITELIST = (
     'http://localhost:8000',
 )
 CORS_ALLOW_CREDENTIALS = True
-CORS_ORIGIN_ALLOW_ALL = True
+
+SESSION_COOKIE_SAMESITE = None  # response header set-cookie:samesite=lax  Default: 'Lax'
+CSRF_COOKIE_SAMESITE = None
+
 CORS_ALLOW_METHODS = (
     'DELETE',
     'GET',

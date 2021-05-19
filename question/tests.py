@@ -1,4 +1,4 @@
-def sendEmail(receivers,url):
+def sendEmail(receivers, url):
     import smtplib
     from email.mime.text import MIMEText
     # 设置服务器所需信息
@@ -37,5 +37,9 @@ def sendEmail(receivers,url):
         print('success')
     except smtplib.SMTPException as e:
         print('error', e)  # 打印错误
+
+
 if __name__ == '__main__':
     sendEmail(['duanjihang@live.com'])
+'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6InN1bndlbmxpIn0.HSVT1-cXb3xh1f73jeNamGB2i_3BNylB9owYqC1rVUM'
+'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6Indsc25iIn0.nj2ElkKEOtCf1HHJjx1mAoMPJPjALsJ9DrPWuqlQkOM'
