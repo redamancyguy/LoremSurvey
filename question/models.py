@@ -1,6 +1,6 @@
 from django.db import models
 from django.utils import timezone
-
+from user.models import User
 
 class Respondent(models.Model):
     sid = models.BigIntegerField()
@@ -11,7 +11,8 @@ class Respondent(models.Model):
     sex = models.CharField(max_length=8, default=None)
     phone = models.CharField(max_length=32, default=None)
     email = models.CharField(max_length=64, default=None)
-    muid = models.BigIntegerField(default=None)
+    muid = models.ForeignKey('user.User', on_delete=models.CASCADE, default=None)
+    # muid = models.BigIntegerField(default=None)
 
     class Meta:
         unique_together = ("sid", "muid")
@@ -26,7 +27,7 @@ class Page(models.Model):
     etime = models.DateTimeField('startTime', blank=True, null=True)
     isopen = models.BooleanField(default=False)
     isrunning = models.BooleanField(default=False)
-    muid = models.BigIntegerField(default=None)
+    muid = models.ForeignKey('user.User', on_delete=models.CASCADE, default=None)
 
 
 class Cquestion(models.Model):

@@ -73,9 +73,7 @@ class Respondents(ControlView, View):
     def get(self, request, *args, **kwargs):
         userlist = []
         token = request.COOKIES.get('token')
-        import user.models as u_models
-        muid = u_models.User.objects.filter(token=token).first().id
-        for i in models.Respondent.objects.filter(muid=muid):
+        for i in models.Respondent.objects.filter(muid__token=token):
             userlist.append(
                 {'id': i.sid, 'name': i.name, 'school': i.school, 'phone': i.phone, 'email': i.email, 'sex': i.sex})
         return JsonResponse({
@@ -99,20 +97,18 @@ class Respondents(ControlView, View):
                         data = pd.read_excel('./files/' + i).values
                         token = request.COOKIES.get('token')
                         import user.models as u_models
-                        muid = u_models.User.objects.filter(token=token).first().id
-                        if muid:
-                            for ii in data:
-                                item = models.Respondent.objects.filter(sid=ii[0],muid=muid)
-                                if item:
-                                    item.delete()
-                                models.Respondent.objects.create(sid=ii[0], name=ii[1], school=ii[2],
-                                                                 major=ii[3], classn=ii[4], sex=ii[5],
-                                                                 phone=ii[6], email=ii[7], muid=muid)
-                            os.remove('./files/' + i)
-                            return JsonResponse({
-                                'code': 0,
-                                'message': "Received"
+                        muid = u_models.User.objects.filter(token=token).first()
+                        for ii in data:
+                            models.Respondent.objects.update_or_create(sid=ii[0], muid = muid, defaults={
+                                'name': ii[1], 'school': ii[2],
+                                'major': ii[3], 'classn': ii[4], 'sex': ii[5],
+                                'phone': ii[6], 'email':    ii[7],
                             })
+                        os.remove('./files/' + i)
+                        return JsonResponse({
+                            'code': 0,
+                            'message': "Received"
+                        })
             except Exception as e:
                 return JsonResponse({
                     'code': 7,
@@ -156,9 +152,7 @@ class ManageQuestion(ControlView, View):
             try:
                 result = []
                 token = request.COOKIES.get('token')
-                import user.models as u_models
-                muid = u_models.User.objects.filter(token=token).first().id
-                ps = models.Page.objects.filter(muid=muid)
+                ps = models.Page.objects.filter(muid__token=token)
                 for i in ps:
                     status = None
                     if i.stime == None:
@@ -213,7 +207,7 @@ class ManageQuestion(ControlView, View):
                             options.append({"label": l.text, "value": l.option})
                     rdata['problemSet'].append(question)
                 for k in models.Fquestion.objects.filter(pid=j.id):
-                    question = {'index': k.index, 'type': 0, 'title': k.title,  'desc': k.desc,'need': k.need, }
+                    question = {'index': k.index, 'type': 0, 'title': k.title, 'desc': k.desc, 'need': k.need, }
                     rdata['problemSet'].append(question)
                 return JsonResponse({
                     'code': 0,
@@ -229,12 +223,12 @@ class ManageQuestion(ControlView, View):
     def post(self, request, *args, **kwargs):
         try:
             token = request.COOKIES.get('token')
-            import user.models as u_models
-            muid = u_models.User.objects.filter(token=token).first().id
             data = json.loads(request.body.decode())
+            import user.models as u_models
+            muid = u_models.User.objects.filter(token=token).first()
             pid = models.Page.objects.create(title=data['title'], isopen=data['isopen'], desc=data['desc'],
                                              emailTemplate=data['emailTemplate'], isrunning=data['isrunning'],
-                                             stime=data['stime'], etime=data['etime'], muid=muid)
+                                             stime=data['stime'], etime=data['etime'], muid = muid)
             for i in data['problemSet']:
                 if i['type'] == 1:
                     cqid = models.Cquestion.objects.create(index=i['index'], title=i['title'], need=i['need'], pid=pid,
@@ -257,11 +251,9 @@ class ManageQuestion(ControlView, View):
         })
 
     def delete(self, request, *args, **kwargs):
-        import user.models as u_models
         token = request.COOKIES.get('token')
-        muid = u_models.User.objects.filter(token=token).first().id
         data = json.loads(request.body)
-        for i in models.Page.objects.filter(id=data['id'], muid=muid):
+        for i in models.Page.objects.filter(id=data['id'], muid__token=token):
             i.delete()
             return JsonResponse({
                 'code': 0,
@@ -276,7 +268,7 @@ class ManageQuestion(ControlView, View):
         data = json.loads(request.body)
         token = request.COOKIES.get('token')
         import user.models as u_models
-        muid = u_models.User.objects.filter(token=token).first().id
+        muid = u_models.User.objects.filter(token=token).first()
         id = data['id']
         data = json.loads(request.body.decode())
         try:
@@ -313,7 +305,7 @@ class ManageQuestion(ControlView, View):
             })
         return JsonResponse({
             'code': 0,
-            'message': 'the page ' + str(data['title'])+' is changed'
+            'message': 'the page ' + str(data['title']) + ' is changed'
         })
 
 
@@ -323,9 +315,7 @@ class Generate(ControlView, View):
             pid = request.GET.get('id')
             userlist = []
             token = request.COOKIES.get('token')
-            import user.models as u_models
-            muid = u_models.User.objects.filter(token=token).first().id
-            for i in models.Respondent.objects.filter(muid=muid).exclude(sid=123456789):
+            for i in models.Respondent.objects.filter(muid__token=token).exclude(sid=123456789):
                 status = 0
                 if models.U_P.objects.filter(pid_id=pid, uid=i).first():
                     status = 1
@@ -353,11 +343,9 @@ class Generate(ControlView, View):
         try:
             for i in models.Page.objects.filter(id=pageid):
                 if i.isopen is False:
-                    import user.models as u_models
                     token = request.COOKIES.get('token')
-                    muid = u_models.User.objects.filter(token=token).first().id
                     flag = False
-                    for j in models.Respondent.objects.filter(muid=muid):
+                    for j in models.Respondent.objects.filter(muid__token=token):
                         if j.sid not in userList:
                             continue
                         flag = True
@@ -382,10 +370,10 @@ class Generate(ControlView, View):
                     })
                 elif i.isopen is True:
                     try:
-                        import user.models as u_models
                         token = request.COOKIES.get('token')
-                        muid = u_models.User.objects.filter(token=token).first().id
-                        models.Respondent.objects.create(sid=123456789, name='anonymous', muid=muid, school='',
+                        import user.models as u_models
+                        muid = u_models.User.objects.filter(token=token).first()
+                        models.Respondent.objects.create(sid=123456789, name='anonymous', muid = muid, school='',
                                                          major='',
                                                          classn='', phone='', email='', sex='')
                     except Exception as e:
@@ -393,12 +381,10 @@ class Generate(ControlView, View):
                     uid = models.Respondent.objects.filter(sid=123456789).first()  # 默认都用这个开放用户答题
                     sessionid = hashlib.md5((str(i.id) + '123456789').encode('utf-8')).hexdigest()
                     models.U_P.objects.create(uid=uid, pid=i, sessionid=sessionid)
-                    import user.models as u_models
                     token = request.COOKIES.get('token')
-                    muid = u_models.User.objects.filter(token=token).first()
                     send_mail('Answer here', i.emailTemplate + '      http://1506607292.top/survey/' + sessionid,
                               '1506607292@qq.com',
-                              [j.email for j in models.Respondent.objects.filter(muid=muid.id)] + [muid.email],
+                              [j.email for j in models.Respondent.objects.filter(muid__token=token)] + [i.muid.email],
                               fail_silently=False)
                     return JsonResponse({
                         'code': 0,
@@ -523,12 +509,10 @@ class AnswerQuestion(View):
 
 class QuestionResult(ControlView, View):
     def get(self, request, *args, **kwargs):
-        import user.models as u_models
         token = request.COOKIES.get('token')
-        muid = u_models.User.objects.filter(token=token).first().id
         try:
             result = []
-            for pid in models.Page.objects.filter(muid=muid):
+            for pid in models.Page.objects.filter(muid__token=token):
                 global ii
                 ii = 0
                 page = {}
