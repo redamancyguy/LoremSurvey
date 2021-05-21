@@ -408,7 +408,7 @@ class AnswerQuestion(View):
         if sessionid:
             try:
                 data = {}
-                i = models.U_P.objects.filter(sessionid=sessionid).first()  # 理论上这个循环就一次
+                i = models.U_P.objects.filter(sessionid=sessionid).first()
                 if not i:
                     return JsonResponse({
                         'code': 2,
@@ -473,7 +473,7 @@ class AnswerQuestion(View):
                 })
         else:
             return JsonResponse({
-                'code': 0,
+                'code': 2,
                 'message': 'Give me you sessionid and I will give you the questions'
             })
 

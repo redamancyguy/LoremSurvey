@@ -77,7 +77,7 @@ class U_P(models.Model):
     id = models.BigAutoField(primary_key=True)
     pid = models.ForeignKey('Page', on_delete=models.CASCADE, default=None)
     uid = models.ForeignKey('Respondent', on_delete=models.CASCADE, default=None)
-    sessionid = models.UUIDField(max_length=64, default=None)
+    sessionid = models.UUIDField(max_length=128, default=None)
     status = models.BooleanField(default=False)
 
     class Meta:
