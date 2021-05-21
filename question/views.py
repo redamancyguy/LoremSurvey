@@ -1,8 +1,8 @@
 import hashlib
 import json
 import os
-from django.http import JsonResponse, HttpResponse, QueryDict
-from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from django.shortcuts import render
 from django.views import View
 from . import models
 from django.core.mail import send_mail
@@ -102,7 +102,7 @@ class Respondents(ControlView, View):
                         muid = u_models.User.objects.filter(token=token).first().id
                         if muid:
                             for ii in data:
-                                item = models.Respondent.objects.filter(sid=ii[0])
+                                item = models.Respondent.objects.filter(sid=ii[0],muid=muid)
                                 if item:
                                     item.delete()
                                 models.Respondent.objects.create(sid=ii[0], name=ii[1], school=ii[2],
@@ -119,18 +119,17 @@ class Respondents(ControlView, View):
                     'message': str(e)
                 })
             return JsonResponse({
-                'code': 1,
+                'code': 2,
                 'message': "File transfer but did not receive"
             })
         else:
             return JsonResponse({
-                'code': 1,
+                'code': 2,
                 'message': "No file transfer"
             })
 
     def delete(self, request, *args, **kwargs):
         try:
-            print(request.body)
             for i in json.loads(request.body):
                 models.Respondent.objects.filter(sid=i).delete()
             return JsonResponse({
@@ -144,17 +143,16 @@ class Respondents(ControlView, View):
             })
 
     def put(self, request, *args, **kwargs):
-        print(request.PUT)
-        print(request.PUT.body)
         return JsonResponse({
-            'code': 1,
+            'code': 2,
             'message': "None questions to delete"
         })
 
 
 class ManageQuestion(ControlView, View):
     def get(self, request, *args, **kwargs):
-        if request.body == b'':
+        id = request.GET.get('id')
+        if id is None:
             try:
                 result = []
                 token = request.COOKIES.get('token')
@@ -166,6 +164,7 @@ class ManageQuestion(ControlView, View):
                     if i.stime == None:
                         result.append(
                             {'id': i.id, 'title': i.title, 'desc': i.desc, 'stime': i.stime, 'etime': i.etime,
+                             'emailTemplate': i.emailTemplate, 'isrunning': i.isrunning,
                              'isopen': i.isopen, 'status': status})
                         continue
                     if timeCompare(i.stime):
@@ -176,6 +175,7 @@ class ManageQuestion(ControlView, View):
                         status = '0'
                     result.append(
                         {'id': i.id, 'title': i.title, 'desc': i.desc, 'stime': i.stime, 'etime': i.etime,
+                         'emailTemplate': i.emailTemplate, 'isrunning': i.isrunning,
                          'isopen': i.isopen, 'status': status})
                 return JsonResponse({
                     'code': 0,
@@ -188,32 +188,32 @@ class ManageQuestion(ControlView, View):
                     'message': str(e)
                 })
         else:
-            data = json.loads(request.body)
-        if 'id' in data.keys():
             rdata = {}
             try:
-                j = models.Page.objects.filter(id=data['id']).first()
+                j = models.Page.objects.filter(id=id).first()
                 if j is None:
                     return JsonResponse({
                         'code': 0,
-                        'message': 'None question page id is :' + data['id']
+                        'message': 'None question page id is :' + request.GET.get('id')
                     })
                 rdata['title'] = j.title
                 rdata['isopen'] = j.isopen
                 rdata['desc'] = j.desc
                 rdata['stime'] = j.stime
                 rdata['etime'] = j.etime
+                rdata['isrunning'] = j.isrunning
+                rdata['emailTemplate'] = j.emailTemplate
                 rdata['problemSet'] = []
                 for k in models.Cquestion.objects.filter(pid=j.id):
                     options = []
-                    question = {'index': k.index, 'type': 1, 'title': k.title, 'need': k.need,
+                    question = {'index': k.index, 'type': 1, 'title': k.title, 'desc': k.desc, 'need': k.need,
                                 'options': options}
                     for l in models.Choice.objects.filter(cqid=k.id):
                         if l.option != '#':
                             options.append({"label": l.text, "value": l.option})
                     rdata['problemSet'].append(question)
                 for k in models.Fquestion.objects.filter(pid=j.id):
-                    question = {'index': k.index, 'type': 0, 'title': k.title, 'need': k.need, }
+                    question = {'index': k.index, 'type': 0, 'title': k.title,  'desc': k.desc,'need': k.need, }
                     rdata['problemSet'].append(question)
                 return JsonResponse({
                     'code': 0,
@@ -222,36 +222,8 @@ class ManageQuestion(ControlView, View):
                 })
             except Exception as e:
                 return JsonResponse({
-                    'code': 0,
-                    'data': str(e),
-                })
-        else:
-            try:
-                result = []
-                token = request.COOKIES.get('token')
-                import user.models as u_models
-                muid = u_models.User.objects.filter(token=token).first().id
-                ps = models.Page.objects.filter(muid=muid)
-                for i in ps:
-                    status = None
-                    if timeCompare(i.stime):
-                        status = '-1'
-                    elif not timeCompare(i.etime):
-                        status = '1'
-                    else:
-                        status = '0'
-                    result.append(
-                        {'id': i.id, 'title': i.title, 'desc': i.desc, 'stime': i.stime, 'etime': i.etime,
-                         'isopen': i.isopen, 'status': status})
-                return JsonResponse({
-                    'code': 0,
-                    'data': result,
-                    'message': 'get success'
-                })
-            except Exception as e:
-                return JsonResponse({
                     'code': 7,
-                    'message': str(e)
+                    'message': str(e),
                 })
 
     def post(self, request, *args, **kwargs):
@@ -261,16 +233,18 @@ class ManageQuestion(ControlView, View):
             muid = u_models.User.objects.filter(token=token).first().id
             data = json.loads(request.body.decode())
             pid = models.Page.objects.create(title=data['title'], isopen=data['isopen'], desc=data['desc'],
+                                             emailTemplate=data['emailTemplate'], isrunning=data['isrunning'],
                                              stime=data['stime'], etime=data['etime'], muid=muid)
             for i in data['problemSet']:
                 if i['type'] == 1:
-                    models.Cquestion.objects.create(index=i['index'], title=i['title'], need=i['need'], pid=pid)
-                    cqid = models.Cquestion.objects.filter(title=i['title'], need=i['need'])[0]
+                    cqid = models.Cquestion.objects.create(index=i['index'], title=i['title'], need=i['need'], pid=pid,
+                                                           desc=i['desc'])
                     for j in i['options']:
                         models.Choice.objects.create(option=str(j['value']), text=j['label'], cqid=cqid)
                     models.Choice.objects.create(option='#', text='others', cqid=cqid)
                 elif i['type'] == 0:
-                    models.Fquestion.objects.create(index=i['index'], need=i['need'], title=i['title'], pid=pid)
+                    models.Fquestion.objects.create(index=i['index'], need=i['need'], title=i['title'], pid=pid,
+                                                    desc=i['desc'])
         except Exception as e:
             return JsonResponse({
                 'code': 7,
@@ -294,7 +268,7 @@ class ManageQuestion(ControlView, View):
                 'message': "Delete questions success"
             })
         return JsonResponse({
-            'code': 1,
+            'code': 2,
             'message': "None questions to delete"
         })
 
@@ -304,41 +278,42 @@ class ManageQuestion(ControlView, View):
         import user.models as u_models
         muid = u_models.User.objects.filter(token=token).first().id
         id = data['id']
-        pid = models.Page.objects.filter(id=id, muid=muid).first()
-        if pid:
-            pid_id = pid.id
-            pid.delete()
-            print('delete')
+        data = json.loads(request.body.decode())
+        try:
+            pid = models.Page.objects.update_or_create(id=id, defaults={
+                'title': data['title'], 'isopen': data['isopen'],
+                'desc': data['desc'],
+                'emailTemplate': data['emailTemplate'], 'isrunning': data['isrunning'],
+                'stime': data['stime'], 'etime': data['etime'], 'muid': muid, 'id': id,
+            })
+            pid = pid[0]
+            for i in pid.fquestion_set.all():
+                i.delete()
+            for i in pid.cquestion_set.all():
+                i.delete()
             try:
-                token = request.COOKIES.get('token')
-                import user.models as u_models
-                muid = u_models.User.objects.filter(token=token).first().id
-                data = json.loads(request.body.decode())
-                models.Page.objects.create(id=pid_id, title=data['title'], isopen=data['isopen'], desc=data['desc'],
-                                           stime=data['stime'], etime=data['etime'], muid=muid)
-                pid = models.Page.objects.filter(title=data['title'], desc=data['desc'],
-                                                 stime=data['stime'], etime=data['etime'])[0]
                 for i in data['problemSet']:
                     if i['type'] == 1:
-                        models.Cquestion.objects.create(index=i['index'], title=i['title'], need=i['need'], pid=pid)
-                        cqid = models.Cquestion.objects.filter(title=i['title'], need=i['need'])[0]
+                        cqid = models.Cquestion.objects.create(pid=pid, index=i['index'], title=i['title'],
+                                                               need=i['need'], desc=i['desc'], )
                         for j in i['options']:
-                            models.Choice.objects.create(option=str(j['value']), text=j['label'], cqid=cqid)
-                        models.Choice.objects.create(option='#', text='others', cqid=cqid)
+                            models.Choice.objects.create(cqid=cqid, option=str(j['value']), text=j['label'])
                     elif i['type'] == 0:
-                        models.Fquestion.objects.create(index=i['index'], need=i['need'], title=i['title'], pid=pid)
+                        models.Fquestion.objects.create(pid=pid, index=i['index'], need=i['need'], title=i['title'],
+                                                        desc=i['desc'])
             except Exception as e:
                 return JsonResponse({
                     'code': 7,
-                    'message': str(e)
+                    'message': 'something wrong with problemSet ' + str(e)
                 })
+        except Exception as e:
             return JsonResponse({
-                'code': 0,
-                'message': "Receive questions success"
+                'code': 7,
+                'message': 'something wrong with your question page ' + str(e)
             })
         return JsonResponse({
             'code': 0,
-            'message': 'there is not page which is ' + str(data['title'])
+            'message': 'the page ' + str(data['title'])+' is changed'
         })
 
 
@@ -350,7 +325,7 @@ class Generate(ControlView, View):
             token = request.COOKIES.get('token')
             import user.models as u_models
             muid = u_models.User.objects.filter(token=token).first().id
-            for i in models.Respondent.objects.filter(muid=muid):
+            for i in models.Respondent.objects.filter(muid=muid).exclude(sid=123456789):
                 status = 0
                 if models.U_P.objects.filter(pid_id=pid, uid=i).first():
                     status = 1
@@ -377,29 +352,35 @@ class Generate(ControlView, View):
         # 可以在这里确定一下 是生成那张卷纸，对于那些学生 现在默认为所有   change!
         try:
             for i in models.Page.objects.filter(id=pageid):
-                if i.isopen == '0':
+                if i.isopen is False:
                     import user.models as u_models
                     token = request.COOKIES.get('token')
                     muid = u_models.User.objects.filter(token=token).first().id
+                    flag = False
                     for j in models.Respondent.objects.filter(muid=muid):
                         if j.sid not in userList:
                             continue
+                        flag = True
                         sessionid = hashlib.md5((str(i.id) + str(j.id)).encode('utf-8')).hexdigest()
                         try:
-                            models.U_P.objects.create(type='0', pid=i, uid=j, sessionid=sessionid)
-                            print(j.id, j.name, j.email, sessionid)
+                            models.U_P.objects.create(pid=i, uid=j, sessionid=sessionid, status='0')
                             from .tests import sendEmail
                             send_mail('Answer your question here',
-                                      'http://1506607292.top/survey/sessionid=' + sessionid,
+                                      i.emailTemplate + '    http://1506607292.top/survey/' + sessionid,
                                       '1506607292@qq.com',
                                       [j.email], fail_silently=False)
                         except Exception as e:
-                            print(e)
+                            print('error:', e)
+                    if flag is False:
+                        return JsonResponse({
+                            'code': 2,
+                            'message': "None people to generate",
+                        })
                     return JsonResponse({
                         'code': 0,
                         'message': "Generate Closed source success",
                     })
-                elif i.isopen == '1':
+                elif i.isopen is True:
                     try:
                         import user.models as u_models
                         token = request.COOKIES.get('token')
@@ -408,23 +389,24 @@ class Generate(ControlView, View):
                                                          major='',
                                                          classn='', phone='', email='', sex='')
                     except Exception as e:
-                        print(e)
+                        print('error:', e)
                     uid = models.Respondent.objects.filter(sid=123456789).first()  # 默认都用这个开放用户答题
                     sessionid = hashlib.md5((str(i.id) + '123456789').encode('utf-8')).hexdigest()
-                    models.U_P.objects.create(type='1', uid=uid, pid=i, sessionid=sessionid)
+                    models.U_P.objects.create(uid=uid, pid=i, sessionid=sessionid)
                     import user.models as u_models
                     token = request.COOKIES.get('token')
                     muid = u_models.User.objects.filter(token=token).first()
-                    send_mail('Answer here', 'http://1506607292.top/survey/sessionid' + sessionid, '1506607292@qq.com',
+                    send_mail('Answer here', i.emailTemplate + '      http://1506607292.top/survey/' + sessionid,
+                              '1506607292@qq.com',
                               [j.email for j in models.Respondent.objects.filter(muid=muid.id)] + [muid.email],
                               fail_silently=False)
                     return JsonResponse({
                         'code': 0,
                         'message': "Generate open source success",
-                        'data': {'link': 'http://1506607292.top/survey/sessionid=' + sessionid}
+                        'data': {'link': 'http://1506607292.top/survey/' + sessionid}
                     })
             return JsonResponse({
-                'code': 1,
+                'code': 2,
                 'message': "Nothing to generate"
             })
         except Exception as e:
@@ -443,26 +425,44 @@ class AnswerQuestion(View):
                 i = models.U_P.objects.filter(sessionid=sessionid).first()  # 理论上这个循环就一次
                 if not i:
                     return JsonResponse({
-                        'code': 1,
+                        'code': 2,
+                        'data': {'statusCode': 105},
                         'message': "Invalid sessionid"
                     })
-                j = models.Page.objects.filter(id=i.pid.id).first()
+                if i.status is True:
+                    return JsonResponse({
+                        'code': 2,
+                        'data': {'statusCode': 104},
+                        'message': 'you have answer this question'
+                    })
+                j = i.pid
                 data['title'] = j.title
                 data['isopen'] = j.isopen
                 data['desc'] = j.desc
                 data['stime'] = j.stime
                 data['etime'] = j.etime
+                data['emailTemplate'] = j.emailTemplate
+                data['isrunning'] = j.isrunning
                 data['problemSet'] = []
-                if not timeCompare(j.etime):
+                if data['isrunning'] is False:
                     return JsonResponse({
-                        'code': 1,
-                        'message': 'The questionnaire time is over'
+                        'code': 2,
+                        'data': {'statusCode': 100},
+                        'message': 'is not running'
                     })
-                if timeCompare(j.stime):
-                    return JsonResponse({
-                        'code': 1,
-                        'message': 'The questionnaire has not started yet'
-                    })
+                if j.etime is not None or j.stime is not None:
+                    if not timeCompare(j.etime):
+                        return JsonResponse({
+                            'code': 2,
+                            'data': {'statusCode': 101},
+                            'message': 'The questionnaire time is over'
+                        })
+                    if timeCompare(j.stime):
+                        return JsonResponse({
+                            'code': 2,
+                            'data': {'statusCode': 102},
+                            'message': 'The questionnaire has not started yet'
+                        })
                 for k in models.Cquestion.objects.filter(pid=j.id):
                     options = []
                     question = {'index': k.index, 'type': 1, 'title': k.title, 'need': k.need,
@@ -474,6 +474,7 @@ class AnswerQuestion(View):
                 for k in models.Fquestion.objects.filter(pid=j.id):
                     question = {'index': k.index, 'type': 0, 'title': k.title, 'need': k.need, }
                     data['problemSet'].append(question)
+                data['statusCode'] = 103
                 return JsonResponse({
                     'code': 0,
                     'data': data,
@@ -496,7 +497,7 @@ class AnswerQuestion(View):
         u_q_id = models.U_P.objects.filter(sessionid=sessionid).first()
         if not u_q_id:
             return JsonResponse({  # 'Invalid sessionid'
-                'code': 1,
+                'code': 2,
                 'message': 'Invalid sessionid'
             })
         pid = u_q_id.pid
@@ -507,13 +508,15 @@ class AnswerQuestion(View):
                     models.Canswer.objects.create(cqid=j, option=i['option'], uid=uid, pid=pid)
                 for j in models.Fquestion.objects.filter(index=i['index'], pid=pid):
                     models.Fanswer.objects.create(fqid=j, answer=i['answer'], uid=uid, pid=pid)
-            models.U_P.objects.filter(sessionid=sessionid).delete()
+            item = models.U_P.objects.filter(sessionid=sessionid).first()
+            item.status = True
+            item.save()
             return JsonResponse({
-                'code': 1,
+                'code': 0,
                 'message': 'Submit successfully'
             })
         return JsonResponse({
-            'code': 1,
+            'code': 2,
             'message': 'Invalid sessionid'
         })
 
@@ -535,7 +538,6 @@ class QuestionResult(ControlView, View):
                     for cid in models.Choice.objects.filter(cqid=cqid):
                         cquestion['option'][cid.text] = models.Canswer.objects.filter(option=cid.option,
                                                                                       cqid=cqid).count()
-                        print(cid.option, "===", models.Canswer.objects.filter(option=cid.option, cqid=cqid).count())
                     ii += 1
                     page['question' + str(ii)] = cquestion
                 for fqid in models.Fquestion.objects.filter(pid=pid):
@@ -549,7 +551,7 @@ class QuestionResult(ControlView, View):
                 result.append(page)
                 ii = 0
             return JsonResponse({
-                'code': 7,
+                'code': 0,
                 'message': 'get it',
                 'data': result
             })

@@ -49,11 +49,11 @@ class Login(View):
                 return obj
             else:
                 return JsonResponse({
-                    'code': 1,
+                    'code': 2,
                     'message': 'wrong username or password'
                 })
         return JsonResponse({
-            'code': 1,
+            'code': 2,
             'message': 'Nothing input !'
         })
 
@@ -65,13 +65,13 @@ class ChangePassword(View):
         username = data['username']
         if not username:
             return JsonResponse({
-                'code': 1,
+                'code': 2,
                 'message': 'I do not know your username'
             })
         uid = models.User.objects.filter(username=username).first()
         if not uid:
             return JsonResponse({
-                'code': 1,
+                'code': 2,
                 'message': 'there is none user whose username is ' + username
             })
         import random
@@ -90,13 +90,13 @@ class ChangePassword(View):
         emailcode = data['emailcode']
         if not emailcode:
             return JsonResponse({
-                'code': 1,
+                'code': 2,
                 'message': 'do not receive emailcode'
             })
         uid = models.User.objects.filter(emailcode=emailcode).first()
         if not uid:
             return JsonResponse({
-                'code': 1,
+                'code': 2,
                 'message': 'wrong code'
             })
         password = data['password']
@@ -136,7 +136,7 @@ class Register(View):
                 })
         else:
             return JsonResponse({
-                'code': 1,
+                'code': 2,
                 'massage': 'None username or password'
             })
 
@@ -162,10 +162,10 @@ class Logout(View):
                 return obj
             else:
                 return JsonResponse({
-                    'code': 1,
+                    'code': 2,
                     'massage': 'wrong token'
                 })
         return JsonResponse({
-            'code': 7,
+            'code': 2,
             'massage': 'Nothing input !'
         })

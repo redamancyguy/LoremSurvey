@@ -19,11 +19,13 @@ class Respondent(models.Model):
 
 class Page(models.Model):
     id = models.BigAutoField(primary_key=True)
-    title = models.CharField(max_length=128, blank=True,null=True)
-    desc = models.CharField(max_length=128, blank=True,null=True)
-    stime = models.DateTimeField('startTime', blank=True,null=True)
-    etime = models.DateTimeField('startTime', blank=True,null=True)
-    isopen = models.CharField(max_length=8, default=None)
+    title = models.CharField(max_length=128, blank=True, null=True)
+    desc = models.TextField(max_length=1024, blank=True, null=True)
+    emailTemplate = models.CharField(max_length=128, blank=True, null=True)
+    stime = models.DateTimeField('startTime', blank=True, null=True)
+    etime = models.DateTimeField('startTime', blank=True, null=True)
+    isopen = models.BooleanField(default=False)
+    isrunning = models.BooleanField(default=False)
     muid = models.BigIntegerField(default=None)
 
 
@@ -31,8 +33,8 @@ class Cquestion(models.Model):
     id = models.BigAutoField(primary_key=True)
     index = models.IntegerField(default=None)
     title = models.CharField(max_length=128, default=None)
-    desc = models.CharField(max_length=128, default=None)
-    need = models.CharField(max_length=8, default=None)
+    desc = models.CharField(max_length=128, default=None,blank=True)
+    need = models.BooleanField(default=False)
     pid = models.ForeignKey('Page', on_delete=models.CASCADE, default=None)
 
 
@@ -48,9 +50,8 @@ class Fquestion(models.Model):
     id = models.BigAutoField(primary_key=True)
     index = models.IntegerField(default=None)
     title = models.CharField(max_length=128, default=None)
-    desc = models.CharField(max_length=128, default=None)
-    need = models.CharField(max_length=8, default=None)
-    exampleAnswer = models.TextField(max_length=1024, default=None)
+    desc = models.CharField(max_length=128, default=None,blank=True)
+    need = models.BooleanField(default=False)
     score = models.IntegerField(default=1)
     pid = models.ForeignKey('Page', on_delete=models.CASCADE, default=None)
 
@@ -73,11 +74,10 @@ class Fanswer(models.Model):
 
 class U_P(models.Model):
     id = models.BigAutoField(primary_key=True)
-    type = models.CharField(max_length=4, default=None)
     pid = models.ForeignKey('Page', on_delete=models.CASCADE, default=None)
     uid = models.ForeignKey('Respondent', on_delete=models.CASCADE, default=None)
     sessionid = models.UUIDField(max_length=64, default=None)
-    status = models.CharField(default=None,max_length=16)
+    status = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ("pid", "uid")

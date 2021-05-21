@@ -13,6 +13,8 @@
      <a href = "{% url 'question:generate' %}">questiongenarate</a><br>
      <a href = "{% url 'user:login' %}">login</a><br>
      <a href = "/static/index.html">static</a><br>
+    {% csrf_token %}
+    {{ csrf_token }}
 </h1>
 </body>
 </html>

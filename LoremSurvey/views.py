@@ -5,7 +5,12 @@ from django.views import View
 
 class Index(View):
     def get(self, request, *args, **kwargs):
-        return render(request, 'index.html')
+        # return render(request, 'index.html')
+        from django.middleware.csrf import get_token
+        return JsonResponse({
+            'code':0,
+            'data2':get_token(request=request)
+        })
 
     def post(self, request, *args, **kwargs):
         return JsonResponse({
@@ -20,6 +25,7 @@ class NotFound(View):
             'code': 0,
             'message': "Page not found"
         })
+
 
     def post(self, request, *args, **kwargs):
         return JsonResponse({

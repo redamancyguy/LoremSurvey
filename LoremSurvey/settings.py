@@ -81,17 +81,18 @@ WSGI_APPLICATION = 'LoremSurvey.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.sqlite3',
-    #     'NAME': BASE_DIR / 'db.sqlite3',
-    # }
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'loremsurvey',
         'USER': 'user',
         'PASSWORD': '123456789',
-        'HOST': '39.104.209.232',
+        'HOST': '127.0.0.1',
+        # 'HOST': '39.104.209.232',
         'PORT': '3306',
+    },
+    'default2': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
