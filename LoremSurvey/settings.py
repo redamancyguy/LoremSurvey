@@ -82,12 +82,12 @@ WSGI_APPLICATION = 'LoremSurvey.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'loremsurvey',
-        'USER': 'user',
-        'PASSWORD': '123456789',
-        'HOST': '127.0.0.1',
-        # 'HOST': '39.104.209.232',
+        'NAME': 'LoremSurvey',
+        'USER': 'LoremSurvey',
+        'PASSWORD': '12345678900',
+        'HOST': '39.104.209.232',
         'PORT': '3306',
+        'OPTIONS': {'charset': 'utf8mb4'},
     },
     'default2': {
         'ENGINE': 'django.db.backends.sqlite3',

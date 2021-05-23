@@ -1,5 +1,4 @@
 from django.http import JsonResponse, HttpResponse
-from django.shortcuts import render
 from django.views import View
 
 
@@ -37,3 +36,5 @@ class NotFound(View):
 def test(request):
     print(request.body)
     return HttpResponse('TESTING!!!')
+
+
