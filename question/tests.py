@@ -1,3 +1,6 @@
+import random
+
+
 def sendEmail(receivers, url):
     import smtplib
     from email.mime.text import MIMEText
@@ -40,4 +43,13 @@ def sendEmail(receivers, url):
 
 
 if __name__ == '__main__':
-    sendEmail(['duanjihang@live.com'])
+    # sendEmail(['duanjihang@live.com'])
+    def generate_code():
+        source = '0123456789qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM'
+        code = ''
+        for i in range(4):
+            code += random.choice(source)
+        return code
+
+
+    print(generate_code())

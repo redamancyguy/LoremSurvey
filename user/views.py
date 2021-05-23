@@ -82,7 +82,7 @@ class ChangePassword(View):
         uid.emailcode = str(random.randint(0, 1000000))
         uid.save()
         print(uid.emailcode)
-        send_mail('Answer here', 'this is the code for change you password' + uid.emailcode, '1506607292@qq.com',
+        send_mail('Your Code for CHANGING PASSWORD', 'this is the code for change you password' + uid.emailcode, '1506607292@qq.com',
                   [uid.email], fail_silently=False)
         return JsonResponse({
             'code': 0,
@@ -180,8 +180,8 @@ from PIL.ImageDraw import ImageDraw
 
 
 def generate_code():
-    source = "0123456789qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM"
-    code = ""
+    source = '0123456789qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM'
+    code = ''
     for i in range(4):
         code += random.choice(source)
     return code
