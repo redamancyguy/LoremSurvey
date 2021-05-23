@@ -318,7 +318,6 @@ class Generate(ControlView, View):
             pid = request.GET.get('id')
             userlist = []
             token = request.COOKIES.get('token')
-            # for i in models.Respondent.objects.filter(muid__token=token).exclude(sid=123456789):
             for i in models.Respondent.objects.filter(muid__token=token):
                 status = 0
                 if models.U_P.objects.filter(pid_id=pid, uid=i).first():
@@ -326,6 +325,9 @@ class Generate(ControlView, View):
                 userlist.append(
                     {'id': i.sid, 'name': i.name, 'school': i.school, 'phone': i.phone, 'email': i.email, 'sex': i.sex,
                      'status': status})
+            if models.Page.objects.filter(id=pid).first().isopen is True:
+                for i in userlist:
+                    i['status'] = 1
             return JsonResponse({
                 'code': 0,
                 'data': userlist,
