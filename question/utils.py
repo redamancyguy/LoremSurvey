@@ -36,7 +36,6 @@ def sendEmail(receiver, subject,content):
             sender, receivers, message.as_string())
         # 退出
         smtpObj.quit()
-        print('success')
     except smtplib.SMTPException as e:
         print('error', e)  # 打印错误
 

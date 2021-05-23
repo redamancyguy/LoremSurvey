@@ -8,7 +8,7 @@ from . import models
 from .utils import sendEmail
 import threading
 
-Domain = 'http://1506607292.top'
+Domain = 'http://1506607292.top/#'
 
 
 def timeCompare(ormTime):
@@ -349,7 +349,7 @@ class Generate(ControlView, View):
                 if i.isopen is False:
                     token = request.COOKIES.get('token')
                     flag = False
-                    for j in models.Respondent.objects.filter(muid__token=token,sid__in=userList):
+                    for j in models.Respondent.objects.filter(muid__token=token, sid__in=userList):
                         if j.sid not in userList:
                             continue
                         flag = True
@@ -358,9 +358,8 @@ class Generate(ControlView, View):
                             models.U_P.objects.create(pid=i, uid=j, sessionid=sessionid, status=False)
                         except Exception as e:
                             print('error:', e)
-                        print('sendto:', j.email)
-                        t = threading.Thread(target=sendEmail,args = (j.email, 'The close question URL for you',
-                                  i.emailTemplate + '      ' + Domain + '/survey/' + sessionid))
+                        t = threading.Thread(target=sendEmail, args=(j.email, 'The close question URL for you',
+                                                                     i.emailTemplate + '      ' + Domain + '/survey/' + sessionid))
                         t.start()
                         # send_mail('The close question URL for you',
                         #           i.emailTemplate + '      ' + Domain + '/survey/' + sessionid,
@@ -382,7 +381,6 @@ class Generate(ControlView, View):
                     token = request.COOKIES.get('token')
                     if item:
                         for j in models.Respondent.objects.filter(muid__token=token, sid__in=userList):
-                            print('sendto:', j.email)
                             t = threading.Thread(target=sendEmail, args=(j.email, 'The open question URL for you',
                                                                          i.emailTemplate + '      ' + Domain + '/survey/' + sessionid))
                             t.start()
