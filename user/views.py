@@ -212,6 +212,10 @@ def getCAPTCHA(request):
     fp = BytesIO()
     image.save(fp, 'png')
     id = models.CAPTCHA.objects.create(content=verify_code)
-    with open(os.getcwd() + '/files/'+str(id.id)+'.png','wb') as f:
+    with open(os.getcwd() + '/static/files/'+str(id.id)+'.png','wb') as f:
         f.write(fp.getvalue())
-    return HttpResponse(fp.getvalue(), content_type='image/png')
+    return JsonResponse({
+        'code':0,
+        'message':'generate captcha success',
+        'data':{'url':'/static/files/'+str(id.id)+'.png'}
+    })

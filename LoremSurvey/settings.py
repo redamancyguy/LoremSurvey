@@ -85,6 +85,7 @@ DATABASES = {
         'NAME': 'LoremSurvey',
         'USER': 'LoremSurvey',
         'PASSWORD': '12345678900',
+        # 'HOST': '127.0.0.1',
         'HOST': '39.104.209.232',
         'PORT': '3306',
         'OPTIONS': {'charset': 'utf8mb4'},
