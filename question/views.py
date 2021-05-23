@@ -5,7 +5,8 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import View
 from . import models
-from django.core.mail import send_mail
+from .utils import sendEmail
+import threading
 
 Domain = 'http://1506607292.top'
 
@@ -348,20 +349,24 @@ class Generate(ControlView, View):
                 if i.isopen is False:
                     token = request.COOKIES.get('token')
                     flag = False
-                    for j in models.Respondent.objects.filter(muid__token=token):
+                    for j in models.Respondent.objects.filter(muid__token=token,sid__in=userList):
                         if j.sid not in userList:
                             continue
                         flag = True
                         sessionid = hashlib.md5((str(i.id) + str(j.id)).encode('utf-8')).hexdigest()
                         try:
                             models.U_P.objects.create(pid=i, uid=j, sessionid=sessionid, status=False)
-                            from .tests import sendEmail
-                            send_mail('The close question URL for you',
-                                      i.emailTemplate + '    ' + Domain + '/survey/' + sessionid,
-                                      '1506607292@qq.com',
-                                      [j.email], fail_silently=False)
                         except Exception as e:
                             print('error:', e)
+                        print('sendto:', j.email)
+                        t = threading.Thread(target=sendEmail,args = (j.email, 'The close question URL for you',
+                                  i.emailTemplate + '      ' + Domain + '/survey/' + sessionid))
+                        t.start()
+                        # send_mail('The close question URL for you',
+                        #           i.emailTemplate + '      ' + Domain + '/survey/' + sessionid,
+                        #           '1506607292@qq.com',
+                        #           [j.email],
+                        #           fail_silently=False)
                     if flag is False:
                         return JsonResponse({
                             'code': 2,
@@ -374,19 +379,24 @@ class Generate(ControlView, View):
                 elif i.isopen is True:
                     sessionid = hashlib.md5((str(i.id)).encode('utf-8')).hexdigest()
                     item = models.U_P.objects.filter(sessionid=sessionid, pid=i).first()
+                    token = request.COOKIES.get('token')
                     if item:
+                        for j in models.Respondent.objects.filter(muid__token=token, sid__in=userList):
+                            print('sendto:', j.email)
+                            t = threading.Thread(target=sendEmail, args=(j.email, 'The open question URL for you',
+                                                                         i.emailTemplate + '      ' + Domain + '/survey/' + sessionid))
+                            t.start()
                         return JsonResponse({
                             'code': 0,
                             'message': 'Generate open source success you have send the email',
                             'data': {'link': Domain + '/survey/' + str(item.sessionid)}
                         })
+                    for j in models.Respondent.objects.filter(muid__token=token, sid__in=userList):
+                        print('sendto:', j.email)
+                        t = threading.Thread(target=sendEmail, args=(j.email, 'The open question URL for you',
+                                                                     i.emailTemplate + '      ' + Domain + '/survey/' + sessionid))
+                        t.start()
                     models.U_P.objects.create(uid=None, pid=i, sessionid=sessionid, status=False)
-                    token = request.COOKIES.get('token')
-                    send_mail('The open question URL for you',
-                              i.emailTemplate + '      ' + Domain + '/survey/' + sessionid,
-                              '1506607292@qq.com',
-                              [j.email for j in models.Respondent.objects.filter(muid__token=token, sid__in=userList)],
-                              fail_silently=False)
                     return JsonResponse({
                         'code': 0,
                         'message': 'Generate open source success',
