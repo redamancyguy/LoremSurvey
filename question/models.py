@@ -2,6 +2,7 @@ from django.db import models
 from django.utils import timezone
 from user.models import User
 
+
 class Respondent(models.Model):
     sid = models.BigIntegerField()
     name = models.CharField(max_length=32, default=None)
@@ -12,6 +13,7 @@ class Respondent(models.Model):
     phone = models.CharField(max_length=32, default=None)
     email = models.CharField(max_length=64, default=None)
     muid = models.ForeignKey('user.User', on_delete=models.CASCADE, default=None)
+
     # muid = models.BigIntegerField(default=None)
 
     class Meta:
@@ -34,7 +36,7 @@ class Cquestion(models.Model):
     id = models.BigAutoField(primary_key=True)
     index = models.IntegerField(default=None)
     title = models.CharField(max_length=128, default=None)
-    desc = models.CharField(max_length=128, default=None,blank=True)
+    desc = models.CharField(max_length=128, default=None, blank=True)
     need = models.BooleanField(default=False)
     pid = models.ForeignKey('Page', on_delete=models.CASCADE, default=None)
 
@@ -51,7 +53,7 @@ class Fquestion(models.Model):
     id = models.BigAutoField(primary_key=True)
     index = models.IntegerField(default=None)
     title = models.CharField(max_length=128, default=None)
-    desc = models.CharField(max_length=128, default=None,blank=True)
+    desc = models.CharField(max_length=128, default=None, blank=True)
     need = models.BooleanField(default=False)
     score = models.IntegerField(default=1)
     pid = models.ForeignKey('Page', on_delete=models.CASCADE, default=None)
@@ -61,24 +63,23 @@ class Canswer(models.Model):  # 问卷结果
     id = models.BigAutoField(primary_key=True)
     cqid = models.ForeignKey('Cquestion', on_delete=models.CASCADE, default=None)
     option = models.CharField(max_length=8, default=None)  # A B C D
-    uid = models.ForeignKey('Respondent', on_delete=models.CASCADE, default=None)
-    pid = models.ForeignKey('Page', on_delete=models.CASCADE, default=None)
+    uid = models.ForeignKey('Respondent', on_delete=models.CASCADE, default=None, null=True, blank=True)
 
 
 class Fanswer(models.Model):
     id = models.BigAutoField(primary_key=True)
     fqid = models.ForeignKey('Fquestion', on_delete=models.CASCADE, default=None)
     answer = models.TextField(max_length=1024, default=None)
-    uid = models.ForeignKey('Respondent', on_delete=models.CASCADE, default=None)
-    pid = models.ForeignKey('Page', on_delete=models.CASCADE, default=None)
+    uid = models.ForeignKey('Respondent', on_delete=models.CASCADE, default=None, null=True, blank=True)
 
 
 class U_P(models.Model):
     id = models.BigAutoField(primary_key=True)
     pid = models.ForeignKey('Page', on_delete=models.CASCADE, default=None)
-    uid = models.ForeignKey('Respondent', on_delete=models.CASCADE, default=None)
+    uid = models.ForeignKey('Respondent', on_delete=models.CASCADE, default=None, null=True, blank=True)
     sessionid = models.UUIDField(max_length=128, default=None)
     status = models.BooleanField(default=False)
+    nums = models.IntegerField(default=0)
 
     class Meta:
         unique_together = ("pid", "uid")

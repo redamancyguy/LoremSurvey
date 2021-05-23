@@ -41,5 +41,3 @@ def sendEmail(receivers, url):
 
 if __name__ == '__main__':
     sendEmail(['duanjihang@live.com'])
-'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6InN1bndlbmxpIn0.HSVT1-cXb3xh1f73jeNamGB2i_3BNylB9owYqC1rVUM'
-'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VybmFtZSI6Indsc25iIn0.nj2ElkKEOtCf1HHJjx1mAoMPJPjALsJ9DrPWuqlQkOM'

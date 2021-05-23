@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     'user.apps.UserConfig',
     'corsheaders',
     'rest_framework',
-    # 'django_filters',
     'drf_yasg',
 ]
 
@@ -171,6 +170,7 @@ CORS_ALLOW_HEADERS = (
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    '*',
 )
 
 LOGGING = {
