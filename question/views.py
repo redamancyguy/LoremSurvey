@@ -8,7 +8,7 @@ from . import models
 from .utils import sendEmail
 import threading
 
-Domain = 'http://1506607292.top/#'
+Domain = 'http://1506607292.top'
 
 
 def timeCompare(ormTime):
@@ -282,6 +282,12 @@ class ManageQuestion(ControlView, View):
                 'stime': data['stime'], 'etime': data['etime'], 'muid': muid, 'id': id,
             })
             pid = pid[0]
+            try:
+                item = models.U_P.objects.filter(pid=pid).first()
+                item.nums = 0
+                item.save()
+            except Exception as e:
+                print(e)
             for i in pid.fquestion_set.all():
                 i.delete()
             for i in pid.cquestion_set.all():
@@ -554,8 +560,9 @@ class QuestionResult(ControlView, View):
                         page['total'] = models.U_P.objects.filter(pid=pid).first().nums
                     except Exception as e:
                         return JsonResponse({
-                            'code': 7,
-                            'message': str(e) + 'None U_P of this Page'
+                            'code': 0,
+                            'message': str(e) + 'None U_P of this Page',
+                            'data': {'title': 'None', 'total': 0, 'question': []}
                         })
                 else:
                     page['total'] = models.U_P.objects.filter(pid=pid, status=True).count()

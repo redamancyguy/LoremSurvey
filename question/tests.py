@@ -1,55 +1,56 @@
-import random
+import os, sys, string, socket
+import smtplib
 
 
-def sendEmail(receivers, url):
-    import smtplib
-    from email.mime.text import MIMEText
-    # 设置服务器所需信息
-    # 163邮箱服务器地址
-    mail_host = 'smtp.qq.com'
-    # 163用户名
-    mail_user = '1506607292@qq.com'
-    # 密码(部分邮箱为授权码)
-    mail_pass = 'reuymrffxxxriidd'
-    # 邮件发送方邮箱地址
-    sender = '1506607292@qq.com'
-    # 设置email信息
-    # 邮件内容设置
-    message = MIMEText('content', 'plain', 'utf-8')
-    # 邮件主题
-    message['Subject'] = 'your question url'
-    # 发送方信息
-    message['From'] = sender
-    # 接受方信息
-    message['To'] = receivers[0]
+class SMTP_SSL(smtplib.SMTP):
+    def __init__(self, host='', port=465, local_hostname=None, key=None, cert=None):
+        self.cert = cert
+        self.key = key
+        smtplib.SMTP.__init__(self, host, port, local_hostname)
 
-    message['url'] = url
+    def connect(self, host='localhost', port=465):
+        if not port and (host.find(':') == host.rfind(':')):
+            i = host.rfind(':')
+            if i >= 0:
+                host, port = host[:i], host[i + 1:]
+                try:
+                    port = int(port)
+                except ValueError:
+                    raise socket.error("nonnumeric port")
+        if not port: port = 654
+        if self.debuglevel > 0: print(sys.stderr, 'connect:', (host, port))
+        msg = "getaddrinfo returns an empty list"
+        self.sock = None
+        for res in socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM):
+            af, socktype, proto, canonname, sa = res
+            try:
+                self.sock = socket.socket(af, socktype, proto)
+                if self.debuglevel > 0: print(sys.stderr, 'connect:', (host, port))
+                self.sock.connect(sa)
+                # 新增加的创建ssl连接
+                sslobj = socket.ssl(self.sock, self.key, self.cert)
+            except socket.error as msg:
+                if self.debuglevel > 0:
+                    print(sys.stderr, 'connect fail:', (host, port))
+                if self.sock:
+                    self.sock.close()
+                self.sock = None
+                continue
+            break
+        if not self.sock:
+            raise socket.error(msg)
 
-    # 登录并发送邮件
-    try:
-        smtpObj = smtplib.SMTP()
-        # 连接到服务器
-        smtpObj.connect(mail_host, 25)
-        # 登录到服务器
-        smtpObj.login(mail_user, mail_pass)
-        # 发送
-        smtpObj.sendmail(
-            sender, receivers, message.as_string())
-        # 退出
-        smtpObj.quit()
-        print('success')
-    except smtplib.SMTPException as e:
-        print('error', e)  # 打印错误
+        # 设置ssl
+        self.sock = smtplib.SSLFakeSocket(self.sock, sslobj)
+        self.file = smtplib.SSLFakeFile(sslobj);
+
+        (code, msg) = self.getreply()
+        if self.debuglevel > 0: print >> sys.stderr, "connect:", msg
+        return (code, msg)
 
 
 if __name__ == '__main__':
-    # sendEmail(['duanjihang@live.com'])
-    def generate_code():
-        source = '0123456789qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM'
-        code = ''
-        for i in range(4):
-            code += random.choice(source)
-        return code
-
-
-    print(generate_code())
+    smtp = SMTP_SSL('192.168.2.10')
+    smtp.set_debuglevel(1)
+    smtp.sendmail("zzz@xxx.com", "zhaowei@zhaowei.com", "xxxxxxxxxxxxxxxxx")
+    smtp.quit()
