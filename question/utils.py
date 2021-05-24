@@ -12,7 +12,7 @@ def sendEmail(receiver, subject,content):
     sender = '1506607292@qq.com'
     # 设置email信息
     # 邮件内容设置
-    message = MIMEText(content, 'plain', 'utf-8')
+    message = MIMEText(content, 'html', 'utf-8')
     # 邮件主题
     message['Subject'] = subject
     # 发送方信息
@@ -36,9 +36,14 @@ def sendEmail(receiver, subject,content):
             sender, receivers, message.as_string())
         # 退出
         smtpObj.quit()
+
     except smtplib.SMTPException as e:
         print('error', e)  # 打印错误
 
 
+
+
 if __name__ == '__main__':
-    sendEmail('2742331300@qq.com','question url for you','please answer your question there ,url: http://www.1506607292.top')
+    with open('test.html','r') as f:
+        sendEmail('2742331300@qq.com','question url for you',f.read())
+        # sendEmail('2742331300@qq.com','question url for you','please answer your question there ,url: http://www.1506607292.top')

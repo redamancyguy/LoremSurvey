@@ -3,12 +3,14 @@ import json
 import os
 import random
 from io import BytesIO
-
+import base64
 from django.core.mail import send_mail
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.views import View
 from . import models
+from PIL import Image, ImageFont
+from PIL.ImageDraw import ImageDraw
 
 
 class Index(View):
@@ -44,10 +46,6 @@ class Login(View):
                     'code': 0,
                     'message': 'login successfully'
                 })
-                obj['Access-Control-Allow-Origin'] = '*'
-                obj['Access-Control-Allow-Headers'] = "content-type"
-                obj['Access-Control-Allow-Methods'] = "DELETE,PUT,GET,POST"
-                # obj.set_cookie('token', token, max_age=3600,httponly=True,secure=True,samesite='None')
                 obj.set_cookie('token', token, max_age=3600)
                 obj.set_cookie('username', info.username, max_age=3600)
                 return obj
@@ -82,7 +80,8 @@ class ChangePassword(View):
         uid.emailcode = str(random.randint(0, 1000000))
         uid.save()
         print(uid.emailcode)
-        send_mail('Your Code for CHANGING PASSWORD', 'this is the code for change you password' + uid.emailcode, '1506607292@qq.com',
+        send_mail('Your Code for CHANGING PASSWORD', 'this is the code for change you password' + uid.emailcode,
+                  '1506607292@qq.com',
                   [uid.email], fail_silently=False)
         return JsonResponse({
             'code': 0,
@@ -175,11 +174,7 @@ class Logout(View):
         })
 
 
-from PIL import Image, ImageFont
-from PIL.ImageDraw import ImageDraw
-
-
-def generate_code():
+def generateCode():
     source = '0123456789qwertyuioplkjhgfdsazxcvbnmQWERTYUIOPLKJHGFDSAZXCVBNM'
     code = ''
     for i in range(4):
@@ -198,7 +193,7 @@ def getCAPTCHA(request):
 
     image = Image.new(mode=mode, size=size, color=color_bg)  # 画布
     imagedraw = ImageDraw(image, mode=mode)  # 画笔
-    verify_code = generate_code()  # 内容
+    verify_code = generateCode()  # 内容
     imagefont = ImageFont.truetype(os.getcwd() + '/files/Roboto-Regular.ttf', 100)
     # 字体 颜色
     for i in range(len(verify_code)):
@@ -211,11 +206,10 @@ def getCAPTCHA(request):
         imagedraw.point(xy=xy, fill=fill)
     fp = BytesIO()
     image.save(fp, 'png')
-    id = models.CAPTCHA.objects.create(content=verify_code)
-    with open(os.getcwd() + '/static/files/'+str(id.id)+'.png','wb') as f:
-        f.write(fp.getvalue())
+    base64Data = base64.b64encode(fp.getvalue())
     return JsonResponse({
-        'code':0,
-        'message':'generate captcha success',
-        'data':{'url':'/static/files/'+str(id.id)+'.png'}
+        'code': 0,
+        'message': 'generate captcha success',
+        'data': {'id': models.CAPTCHA.objects.create(content=verify_code).id,
+                 'base64Data': str(base64Data, encoding='utf-8')}
     })

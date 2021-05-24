@@ -282,26 +282,33 @@ class ManageQuestion(ControlView, View):
                 'stime': data['stime'], 'etime': data['etime'], 'muid': muid, 'id': id,
             })
             pid = pid[0]
-            try:
-                item = models.U_P.objects.filter(pid=pid).first()
-                item.nums = 0
-                item.save()
-            except Exception as e:
-                print(e)
-            for i in pid.fquestion_set.all():
-                i.delete()
-            for i in pid.cquestion_set.all():
-                i.delete()
+            # try:
+            #     item = models.U_P.objects.filter(pid=pid).first()
+            #     item.nums = 0
+            #     item.save()
+            # except Exception as e:
+            #     print(e)
+            # for i in pid.fquestion_set.all():
+            #     i.delete()
+            # for i in pid.cquestion_set.all():
+            #     i.delete()
             try:
                 for i in data['problemSet']:
                     if i['type'] == 1:
-                        cqid = models.Cquestion.objects.create(pid=pid, index=i['index'], title=i['title'],
-                                                               need=i['need'], desc=i['desc'], )
+                        cqid = models.Cquestion.objects.update_or_create(pid=pid, index=i['index'],
+                                                                         defaults={'title': i['title'],
+                                                                                   'need': i['need'],
+                                                                                   'desc': i['desc']})[0]
+                        print(1)
                         for j in i['options']:
-                            models.Choice.objects.create(cqid=cqid, option=str(j['value']), text=j['label'])
+                            print(2)
+                            models.Choice.objects.update_or_create(cqid=cqid, option=str(j['value']), defaults={
+                                'text': j['label']})
                     elif i['type'] == 0:
-                        models.Fquestion.objects.create(pid=pid, index=i['index'], need=i['need'], title=i['title'],
-                                                        desc=i['desc'])
+                        print(3)
+                        models.Fquestion.objects.update_or_create(pid=pid, index=i['index'],
+                                                                  defaults={'need': i['need'], 'title': i['title'],
+                                                                            'desc': i['desc']})
             except Exception as e:
                 return JsonResponse({
                     'code': 7,
@@ -527,6 +534,7 @@ class AnswerQuestion(View):
                             models.Fanswer.objects.create(fqid=j, answer=i['answer'], uid=uid)
                 if pid.isopen is not True:
                     u_q_id.status = True
+                    u_q_id.nums += 1
                     u_q_id.save()
                 if pid.isopen is True:
                     u_q_id.nums += 1
@@ -555,17 +563,16 @@ class QuestionResult(ControlView, View):
             for pid in models.Page.objects.filter(muid__token=token, id=pid_id):
                 page['title'] = pid.title
                 page['question'] = list()
-                if pid.isopen is True:
-                    try:
-                        page['total'] = models.U_P.objects.filter(pid=pid).first().nums
-                    except Exception as e:
-                        return JsonResponse({
-                            'code': 0,
-                            'message': str(e) + 'None U_P of this Page',
-                            'data': {'title': 'None', 'total': 0, 'question': []}
-                        })
-                else:
-                    page['total'] = models.U_P.objects.filter(pid=pid, status=True).count()
+                page['total'] = 0
+                try:
+                    for i in models.U_P.objects.filter(pid=pid):
+                        page['total'] += i.nums
+                except Exception as e:
+                    return JsonResponse({
+                        'code': 0,
+                        'message': str(e) + 'None U_P of this Page',
+                        'data': {'title': 'None', 'total': 0, 'question': []}
+                    })
                 for cqid in models.Cquestion.objects.filter(pid=pid):
                     cquestion = {'title': cqid.title, 'type': 1, 'index': cqid.index, 'option': {},
                                  'total': models.Canswer.objects.filter(cqid=cqid).count()}
