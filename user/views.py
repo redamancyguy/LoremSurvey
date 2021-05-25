@@ -5,7 +5,7 @@ import random
 from io import BytesIO
 import base64
 from django.core.mail import send_mail
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render
 from django.views import View
 from . import models
@@ -207,9 +207,12 @@ def getCAPTCHA(request):
     fp = BytesIO()
     image.save(fp, 'png')
     base64Data = base64.b64encode(fp.getvalue())
+    # return HttpResponse(fp.getvalue(),content_type="image/png")
+    print(base64Data)
+    # id =models.CAPTCHA.objects.create(content=verify_code).id
     return JsonResponse({
         'code': 0,
         'message': 'generate captcha success',
-        'data': {'id': models.CAPTCHA.objects.create(content=verify_code).id,
+        'data': {'id': 'id',
                  'base64Data': str(base64Data, encoding='utf-8')}
     })

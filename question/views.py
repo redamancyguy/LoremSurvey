@@ -586,9 +586,9 @@ class QuestionResult(ControlView, View):
                     answer = {}
                     faids = set()
                     for faid in models.Fanswer.objects.filter(fqid=fqid):
-                        faids.add(faid.answer)
-                    for iii in faids:
-                        answer[iii] = models.Fanswer.objects.filter(answer=iii).count()
+                        faids.add((faid.answer,faid.id))
+                    for iii,iiii in faids:
+                        answer[iii] = models.Fanswer.objects.filter(answer=iii,fqid=fqid).count()
                     fquestion['answers'] = answer
                     page['question'].append(fquestion)
             return JsonResponse({
