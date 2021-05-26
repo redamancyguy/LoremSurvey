@@ -52,7 +52,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    'question.middleware.HttpPost2HttpOtherMiddleware',
+    'question.middleWare.HttpPost2HttpOtherMiddleware',
+    'user.middleWare.ResetCookies',
+    'LoremSurvey.middleWare.Custom',
+    'django.middleware.cache.UpdateCacheMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.cache.FetchFromCacheMiddleware',
 ]
 
 ROOT_URLCONF = 'LoremSurvey.urls'
@@ -82,11 +87,11 @@ WSGI_APPLICATION = 'LoremSurvey.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'LoremSurvey',
+        'NAME': 'LoremSurvey1',
         'USER': 'LoremSurvey',
         'PASSWORD': '12345678900',
-        # 'HOST': '127.0.0.1',
-        'HOST': '39.104.209.232',
+        'HOST': '127.0.0.1',
+        # 'HOST': '39.104.209.232',
         'PORT': '3306',
         'OPTIONS': {'charset': 'utf8mb4'},
     },
@@ -204,3 +209,10 @@ EMAIL_PORT = 25  # 发件箱的SMTP服务器端口
 
 EMAIL_HOST_USER = '1506607292@qq.com'  # 发送邮件的邮箱地址
 EMAIL_HOST_PASSWORD = 'ayfhyuixcncmgbef'  # 发送邮件的邮箱密码(这里使用的是授权码)
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '127.0.0.1:11211',
+    }
+}

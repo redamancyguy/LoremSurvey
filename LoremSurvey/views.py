@@ -7,8 +7,8 @@ class Index(View):
         # return render(request, 'index.html')
         from django.middleware.csrf import get_token
         return JsonResponse({
-            'code':0,
-            'data2':get_token(request=request)
+            'code': 0,
+            'data2': get_token(request=request)
         })
 
     def post(self, request, *args, **kwargs):
@@ -25,7 +25,6 @@ class NotFound(View):
             'message': "Page not found"
         })
 
-
     def post(self, request, *args, **kwargs):
         return JsonResponse({
             'code': 0,
@@ -33,8 +32,14 @@ class NotFound(View):
         })
 
 
+class Foo:
+    def __init__(self, request):
+        self.request = request
+
+    def render(self):
+        return HttpResponse('class render')
+
+
 def test(request):
-    print(request.body)
-    return HttpResponse('TESTING!!!')
-
-
+    return Foo(request).render()
+    # return HttpResponse('ok')
