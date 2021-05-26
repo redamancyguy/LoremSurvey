@@ -1,56 +1,22 @@
-import os, sys, string, socket
-import smtplib
-
-
-class SMTP_SSL(smtplib.SMTP):
-    def __init__(self, host='', port=465, local_hostname=None, key=None, cert=None):
-        self.cert = cert
-        self.key = key
-        smtplib.SMTP.__init__(self, host, port, local_hostname)
-
-    def connect(self, host='localhost', port=465):
-        if not port and (host.find(':') == host.rfind(':')):
-            i = host.rfind(':')
-            if i >= 0:
-                host, port = host[:i], host[i + 1:]
-                try:
-                    port = int(port)
-                except ValueError:
-                    raise socket.error("nonnumeric port")
-        if not port: port = 654
-        if self.debuglevel > 0: print(sys.stderr, 'connect:', (host, port))
-        msg = "getaddrinfo returns an empty list"
-        self.sock = None
-        for res in socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM):
-            af, socktype, proto, canonname, sa = res
-            try:
-                self.sock = socket.socket(af, socktype, proto)
-                if self.debuglevel > 0: print(sys.stderr, 'connect:', (host, port))
-                self.sock.connect(sa)
-                # 新增加的创建ssl连接
-                sslobj = socket.ssl(self.sock, self.key, self.cert)
-            except socket.error as msg:
-                if self.debuglevel > 0:
-                    print(sys.stderr, 'connect fail:', (host, port))
-                if self.sock:
-                    self.sock.close()
-                self.sock = None
-                continue
-            break
-        if not self.sock:
-            raise socket.error(msg)
-
-        # 设置ssl
-        self.sock = smtplib.SSLFakeSocket(self.sock, sslobj)
-        self.file = smtplib.SSLFakeFile(sslobj);
-
-        (code, msg) = self.getreply()
-        if self.debuglevel > 0: print >> sys.stderr, "connect:", msg
-        return (code, msg)
-
+from pymongo import MongoClient
 
 if __name__ == '__main__':
-    smtp = SMTP_SSL('192.168.2.10')
-    smtp.set_debuglevel(1)
-    smtp.sendmail("zzz@xxx.com", "zhaowei@zhaowei.com", "xxxxxxxxxxxxxxxxx")
-    smtp.quit()
+
+    # 建立Mongodb数据库连接
+    # client = MongoClient('127.0.0.1', 27017)
+    client = MongoClient('39.104.209.232', 27017)
+    # test为数据库
+
+    db = client.test
+    # test为集合，相当于表名
+    db.authenticate('user','123456789')
+    collection = db.test
+    # 插入集合数据
+    collection.insert_one({"title": "test2"})
+    # 打印集合中所有数据
+    for item in collection.find():
+        print(item)
+    client.close()
+    print(collection.find_one())
+    # collection.delete_many('title')
+    collection.drop()
