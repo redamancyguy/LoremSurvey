@@ -1,6 +1,4 @@
 from django.db import models
-from pymongo import MongoClient
-
 from user.models import User
 
 
@@ -73,16 +71,3 @@ class Entrance(models.Model):
 
     class Meta:
         unique_together = ('page', 'respondent')
-
-
-class Mongo:
-    def __init__(self, host='127.0.0.1', port=27017):
-        self.host = host
-        self.port = port
-        self.client = MongoClient('39.104.209.232', 27017)
-
-    def getClient(self):
-        return self.client
-
-    def close(self):
-        self.client.close()

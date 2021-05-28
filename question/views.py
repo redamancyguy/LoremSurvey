@@ -1,11 +1,8 @@
 import hashlib
 import json
 import os
-from django.http import JsonResponse, HttpResponse
-from django.shortcuts import render
+from django.http import JsonResponse
 from django.views import View
-from django.views.decorators.cache import cache_page
-
 from . import models
 from .utils import sendEmail
 import threading
@@ -157,7 +154,6 @@ class Respondents(ControlView, View):
 
 
 class ManageQuestion(ControlView, View):
-
     @staticmethod
     def get(request, *args, **kwargs):
         if request.GET.get('id') is None:
@@ -290,16 +286,6 @@ class ManageQuestion(ControlView, View):
                 'startTime': data['startTime'], 'stopTime': data['stopTime'],
             })
             page = pages[0]
-            # try:
-            #     item = models.U_P.objects.filter(pid=pid).first()
-            #     item.nums = 0
-            #     item.save()
-            # except Exception as e:
-            #     print(e)
-            # for i in pid.fquestion_set.all():
-            #     i.delete()
-            # for i in pid.cquestion_set.all():
-            #     i.delete()
             try:
                 for i in data['problemSet']:
                     question = models.Question.objects.update_or_create(page=page, index=i['index'], type=i['type'],

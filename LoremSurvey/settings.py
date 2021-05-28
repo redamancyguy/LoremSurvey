@@ -54,7 +54,8 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'question.middleWare.HttpPost2HttpOtherMiddleware',
     'user.middleWare.ResetCookies',
-    'LoremSurvey.middleWare.Custom',
+    'middleware.custom.Custom',
+
     'django.middleware.cache.UpdateCacheMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.cache.FetchFromCacheMiddleware',
@@ -94,6 +95,7 @@ DATABASES = {
         # 'HOST': '39.104.209.232',
         'PORT': '3306',
         'OPTIONS': {'charset': 'utf8mb4'},
+        'ATOMIC_REQUEST': True,  # Auto rollback
     },
     'default2': {
         'ENGINE': 'django.db.backends.sqlite3',
