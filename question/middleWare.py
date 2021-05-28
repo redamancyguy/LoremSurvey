@@ -1,5 +1,5 @@
 from django.http import QueryDict
-
+import json
 try:
     from django.utils.deprecation import MiddlewareMixin  # 1.10.x
 except ImportError:
@@ -7,7 +7,8 @@ except ImportError:
 
 
 class HttpPost2HttpOtherMiddleware(MiddlewareMixin):
-    def process_request(self, request):
+    @staticmethod
+    def process_request(request):
         """
         可以继续添加HEAD、PATCH、OPTIONS以及自定义方法
         HTTP_X_METHODOVERRIDE貌似是以前版本的key？？？
@@ -18,11 +19,7 @@ class HttpPost2HttpOtherMiddleware(MiddlewareMixin):
             http_method = request.META['REQUEST_METHOD']
             if http_method.upper() not in ('GET', 'POST'):
                 setattr(request, http_method.upper(), QueryDict(request.body))
-        # except KeyError:
-        #   http_method = request.META['HTTP_X_METHODOVERRIDE']
-        #   if http_method.upper() not in ('GET', 'POST'):
-        #     setattr(request, http_method.upper(), QueryDict(request.body))
-        except Exception:
-            pass
+        except Exception as e:
+            print('error', e)
         finally:
             return None
